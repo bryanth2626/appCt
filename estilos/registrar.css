@@ -1,0 +1,408 @@
+/* ── Reset ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #f0f0f0;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  color: #111;
+}
+
+/* ── Página centrada como hoja ── */
+.pagina {
+  width: 760px;
+  margin: 30px auto 50px;
+  background: #fff;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* ── HEADER igual al contrato ── */
+.doc-header {
+  display: flex;
+  background: #000;
+  overflow: hidden;
+}
+
+.doc-header-logo {
+  background: #000;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  min-width: 180px;
+  clip-path: polygon(0 0, 85% 0, 100% 100%, 0 100%);
+}
+
+.doc-header-logo img {
+  height: 70px;
+  width: auto;
+}
+
+.doc-header-info {
+  background: #f07c00;
+  flex: 1;
+  padding: 14px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.doc-header-info h1 {
+  font-size: 18px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #fff;
+  letter-spacing: 0.04em;
+}
+
+.doc-header-info p {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 2px;
+}
+
+/* ── Cuerpo del documento ── */
+.doc-body {
+  padding: 24px 32px 32px;
+}
+
+/* ── Título del contrato + fecha ── */
+.doc-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 2px solid #f07c00;
+  padding-bottom: 10px;
+  margin-bottom: 18px;
+}
+
+.doc-title-row h2 {
+  font-size: 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #111;
+}
+
+.fecha-contrato {
+  font-size: 12px;
+  font-weight: 600;
+  color: #444;
+  white-space: nowrap;
+}
+
+/* ── Secciones ── */
+.seccion {
+  margin-bottom: 18px;
+}
+
+.seccion-titulo {
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #111;
+  border-left: 4px solid #f07c00;
+  padding-left: 8px;
+  margin-bottom: 12px;
+}
+
+/* ── Grid de campos ── */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 20px;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px 20px;
+}
+.grid-1 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.span-2 {
+  grid-column: span 2;
+}
+
+/* ── Campo ── */
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.campo label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #555;
+}
+
+.campo input,
+.campo select {
+  border: none;
+  border-bottom: 1.5px solid #ccc;
+  background: transparent;
+  padding: 5px 2px;
+  font-size: 13px;
+  font-family: Arial, sans-serif;
+  color: #111;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+
+.campo input:focus,
+.campo select:focus {
+  border-bottom-color: #f07c00;
+}
+
+/* ── Tabla de pagos ── */
+.tabla-pagos {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+
+.tabla-pagos th {
+  background: #f07c00;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.tabla-pagos td {
+  padding: 6px 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.tabla-pagos td input,
+.tabla-pagos td select {
+  border: none;
+  border-bottom: 1.5px solid #ccc;
+  background: transparent;
+  padding: 4px 2px;
+  font-size: 13px;
+  font-family: Arial, sans-serif;
+  color: #111;
+  outline: none;
+  width: 100%;
+}
+
+.tabla-pagos td input:focus,
+.tabla-pagos td select:focus {
+  border-bottom-color: #f07c00;
+}
+
+/* Saldo calculado automáticamente */
+#saldo {
+  font-weight: 700;
+  color: #c00;
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  width: 100%;
+}
+
+/* ── Forma de pago checkboxes ── */
+.forma-pago-row {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.forma-pago-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.forma-pago-row input[type="radio"] {
+  accent-color: #f07c00;
+  width: 14px;
+  height: 14px;
+}
+
+/* ── Condiciones ── */
+.condiciones {
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  padding: 14px 16px;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: #444;
+}
+
+.condiciones p {
+  font-weight: 800;
+  font-size: 12px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  color: #111;
+}
+
+.condiciones ul {
+  padding-left: 16px;
+}
+
+.condiciones li {
+  margin-bottom: 4px;
+}
+
+.condiciones .aviso {
+  color: #c00;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+  margin-top: 10px;
+  text-align: center;
+}
+
+/* ── Firmas ── */
+.firmas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-top: 80px;
+}
+
+.firma-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.firma-linea {
+  width: 100%;
+  border-bottom: 1.5px solid #111;
+}
+
+.firma-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #555;
+}
+
+/* ── Footer del documento ── */
+.doc-footer {
+  background: #000;
+  position: relative;
+  overflow: hidden;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.doc-footer::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 70px;
+  height: 100%;
+  background: #f07c00;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.doc-footer span {
+  font-size: 10px;
+  color: #888;
+  letter-spacing: 0.06em;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Botones de acción ── */
+.acciones {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 28px;
+}
+
+.btn {
+  padding: 10px 28px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  border: none;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+  transition: background 0.2s;
+}
+
+.btn-primary {
+  background: #f07c00;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #d06800;
+}
+
+.btn-secondary {
+  background: #eee;
+  color: #444;
+}
+
+.btn-secondary:hover {
+  background: #ddd;
+}
+
+/* ── Mensajes ── */
+.msg {
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.msg-ok {
+  background: #e6f4ea;
+  color: #1a7a30;
+  border-left: 4px solid #1a7a30;
+}
+.msg-error {
+  background: #fdecea;
+  color: #c0392b;
+  border-left: 4px solid #c0392b;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  .pagina {
+    box-shadow: none;
+    margin: 0;
+    width: 100%;
+  }
+  .acciones {
+    display: none;
+  }
+}
