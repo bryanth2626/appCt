@@ -1,11 +1,4 @@
 /* ── Reset ── */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
 
 body {
   background: #f0f0f0;
@@ -243,6 +236,140 @@ body {
   height: 14px;
 }
 
+.condiciones-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.condicion-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1.5px solid #e8e8e8;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+  user-select: none;
+}
+
+.condicion-item:hover {
+  border-color: #f07c00;
+  background: #fff8f2;
+}
+
+.condicion-item input[type="checkbox"] {
+  accent-color: #f07c00;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+.condicion-item.seleccionada {
+  border-color: #f07c00;
+  background: #fff3e0;
+}
+
+.condicion-item span {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* Condición fija */
+.condicion-fija {
+  border-color: #e8c0c0 !important;
+  background: #fff5f5 !important;
+  cursor: default !important;
+}
+
+.condicion-fija:hover {
+  border-color: #c0392b !important;
+  background: #fdecea !important;
+}
+
+.condicion-fija.seleccionada {
+  border-color: #c0392b !important;
+  background: #fdecea !important;
+}
+
+.condicion-fija input[type="checkbox"] {
+  accent-color: #c0392b !important;
+}
+
+.condicion-fija span {
+  color: #c0392b !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  text-transform: uppercase;
+}
+
+.badge-fija {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #fff;
+  background: #c0392b;
+  padding: 1px 6px;
+  margin-left: 6px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 3px;
+}
+
+.cond-controles {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.btn-cond {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: none;
+  border: 1.5px solid #ccc;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+  color: #666;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.btn-cond:hover {
+  border-color: #f07c00;
+  color: #f07c00;
+}
+
+.cond-contador {
+  font-size: 11px;
+  color: #888;
+  margin-left: auto;
+}
+
+.cond-contador span {
+  font-weight: 700;
+  color: #f07c00;
+}
+
+.aviso-sin-cond {
+  font-size: 11px;
+  color: #c0392b;
+  font-weight: 600;
+  display: none;
+  margin-top: 6px;
+}
+
 /* ── Condiciones ── */
 .condiciones {
   background: #fafafa;
@@ -305,37 +432,6 @@ body {
   letter-spacing: 0.1em;
   color: #555;
 }
-
-/* ── Footer del documento ── */
-.doc-footer {
-  background: #000;
-  position: relative;
-  overflow: hidden;
-  padding: 10px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.doc-footer::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 70px;
-  height: 100%;
-  background: #f07c00;
-  clip-path: polygon(100% 0, 100% 100%, 0 100%);
-}
-
-.doc-footer span {
-  font-size: 10px;
-  color: #888;
-  letter-spacing: 0.06em;
-  position: relative;
-  z-index: 1;
-}
-
 /* ── Botones de acción ── */
 .acciones {
   display: flex;

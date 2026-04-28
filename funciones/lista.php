@@ -101,7 +101,7 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Lista de Contratos — ISHUME</title>
-    <link href="../estilos/lista.css" rel="stylesheet"/>
+    <link href="../css/lista.css" rel="stylesheet"/>
     <style>
         /* ── Modal documento (contrato original) ── */
         .modal-doc-overlay {
@@ -280,42 +280,8 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                     <td><span class="badge <?= $estado['clase'] ?>"><?= $estado['label'] ?></span></td>
                     <td class="td-acciones">
 
-                        <!-- VER (muestra contrato original) -->
-                        <button class="btn-icon btn-ver" title="Ver contrato original"
-                                onclick='verContrato(<?= htmlspecialchars(json_encode([
-                                    'id'              => $ct['contrato_id'],
-                                    'cliente'         => $ct['cliente'],
-                                    'dni'             => $ct['dni'],
-                                    'email'           => $ct['email'],
-                                    'telefono'        => $ct['telefono'],
-                                    'nombre_servicio' => $ct['nombre_servicio'],
-                                    'servicio_detalle'=> $ct['servicio_detalle'] ?? '',
-                                    'fecha_evento'    => $ct['fecha_evento'],
-                                    'ho_inicio'       => $ct['ho_inicio'],
-                                    'direccion'       => $ct['direccion'],
-                                    'provincia'       => $ct['provincia'],
-                                    'proforma'        => $ct['proforma'],
-                                    'monto_total'     => $ct['monto_total'],
-                                    'adelanto'        => $ct['adelanto'],
-                                    'saldo'           => $ct['saldo_original'],
-                                    'saldo_actual'    => $saldoActual,
-                                    'fecha_limite'    => $ct['fecha_limite_original'],
-                                    'fecha_limite_actual' => $ct['fecha_limite_actual'],
-                                    'nombre_pago'     => $ct['nombre_pago'],
-                                    'fecha_entrega'   => $ct['fecha_entrega'],
-                                    'unidades'        => $ct['unidades'],
-                                    'formato'         => $ct['formato'],
-                                    'condiciones'     => $condiciones,
-                                    'fecha_contrato'  => $ct['fecha_contrato'],
-                                ])) ?>)'>
-                            <svg viewBox="0 0 16 16" fill="none">
-                                <ellipse cx="8" cy="8" rx="7" ry="5" stroke="currentColor" stroke-width="1.3"/>
-                                <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/>
-                            </svg>
-                        </button>
-
                         <!-- PDF (contrato original) -->
-                        <a class="btn-icon btn-pdf" title="Imprimir / PDF (original)"
+                        <a class="btn-icon btn-pdf" title="Ver contrato / PDF (impresion)"
                            href="contrato_pdf.php?id=<?= $ct['contrato_id'] ?>&origen=lista" target="_blank">
                             <svg viewBox="0 0 16 16" fill="none">
                                 <path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.3"/>
@@ -372,94 +338,6 @@ function calcEstado(saldo, fl) {
     return                       {label:'Proceso',bg:'#fff3e0',color:'#e65100'};
 }
 
-function verContrato(c) {
-    // El modal muestra DATOS ORIGINALES del snapshot
-    // El estado usa saldo_actual para reflejar si ya pagó
-    const saldo  = parseFloat(c.saldo_actual ?? c.saldo ?? 0);
-    const estado = calcEstado(saldo, c.fecha_limite_actual ?? c.fecha_limite);
-    const num    = String(c.id).padStart(3,'0');
-
-    // Condiciones (guardadas como array de textos en el snapshot)
-    const conds = Array.isArray(c.condiciones) ? c.condiciones : [];
-    // La última condición del array es la fija (se guarda al registrar)
-    // Separar condiciones normales de la fija
-    const condsFija  = conds.filter(t => t.startsWith('*'));
-    const condsNorm  = conds.filter(t => !t.startsWith('*'));
-    const liNorm     = condsNorm.map(t => `<li>${esc(t)}</li>`).join('');
-
-    document.getElementById('btn-pdf-link').href = 'contrato_pdf.php?id='+c.id+'&origen=lista';
-
-    document.getElementById('doc-hoja').innerHTML = `
-        <div class="doc-header">
-            <div class="doc-header-logo"><img src="../img/logo.png" alt="ISHUME"/></div>
-            <div class="doc-header-info">
-                <h1>Xiomara Tasayco H.</h1>
-                <p>Gerenta General &nbsp;|&nbsp; 991157028 &nbsp;|&nbsp; ✉ IshumeAgencia@hotmail.com</p>
-            </div>
-        </div>
-        <div class="cv-body">
-            <div class="cv-title">
-                <h2>Contrato N° ${num} — Servicios Audiovisuales</h2>
-                <span>Chincha, ${fmtFecha(c.fecha_contrato)}</span>
-            </div>
-            <div class="cv-sec"><div class="cv-sec-t">Datos del Cliente</div>
-                <table class="cv-tbl">
-                    <tr><td class="l">Nombre completo</td><td>${esc(c.cliente)}</td></tr>
-                    <tr><td class="l">DNI</td><td>${esc(c.dni)}</td></tr>
-                    <tr><td class="l">Teléfono</td><td>${esc(c.telefono)||'—'}</td></tr>
-                    <tr><td class="l">Correo electrónico</td><td>${esc(c.email)||'—'}</td></tr>
-                </table>
-            </div>
-            <div class="cv-sec"><div class="cv-sec-t">Detalles del contrato</div>
-                <table class="cv-tbl">
-                    <tr><td class="l">Evento</td><td>${esc(c.nombre_servicio)}</td></tr>
-                    ${c.servicio_detalle ? `<tr><td class="l">Servicio</td><td>${esc(c.servicio_detalle)}</td></tr>` : ''}
-                    <tr><td class="l">Fecha del evento</td><td>${fmtFecha(c.fecha_evento)}</td></tr>
-                    <tr><td class="l">Hora de inicio</td><td>${fmtHora(c.ho_inicio)}</td></tr>
-                    <tr><td class="l">Dirección</td><td>${esc(c.direccion)}</td></tr>
-                    <tr><td class="l">Provincia</td><td>${esc(c.provincia)}</td></tr>
-                    <tr><td class="l">proforma</td><td>${esc(c.proforma)}</td></tr>
-                </table>
-            </div>
-            <div class="cv-sec"><div class="cv-sec-t">Estado de Pago</div>
-                <table class="cv-tbl-pago">
-                    <thead><tr>
-                        <th>Monto Total</th><th>Adelanto</th><th>Saldo Pendiente</th>
-                        <th>Forma Pago</th><th>Fecha Límite</th><th>Estado</th>
-                    </tr></thead>
-                    <tbody><tr>
-                        <td style="font-weight:700">${fmtMoney(c.monto_total)}</td>
-                        <td style="font-weight:700">${fmtMoney(c.adelanto)}</td>
-                        <td style="font-weight:800;color:${saldo<=0?'#1a7a30':'#c0392b'}">${fmtMoney(c.saldo)}</td>
-                        <td>${esc(c.nombre_pago)||'—'}</td>
-                        <td>${fmtFecha(c.fecha_limite)}</td>
-                        <td><span class="cv-estado" style="background:${estado.bg};color:${estado.color}">${estado.label}</span></td>
-                    </tr></tbody>
-                </table>
-            </div>
-            <div class="cv-sec"><div class="cv-sec-t">Entrega del Material</div>
-                <table class="cv-tbl">
-                    <tr><td class="l">Fecha de entrega</td><td>${fmtFecha(c.fecha_entrega)}</td></tr>
-                    <tr><td class="l">Formato</td><td>${esc(c.formato)||'—'}</td></tr>
-                    <tr><td class="l">N° de unidades</td><td>${esc(c.unidades)||'—'}</td></tr>
-                </table>
-            </div>
-            <div class="cv-sec"><div class="cv-sec-t">Condiciones del Contrato</div>
-                <div class="cv-conds">
-                    ${liNorm?'<ol>'+liNorm+'</ol>':''}
-                    <div class="cv-cond-fija">${esc(COND_FIJA)}</div>
-                </div>
-            </div>
-            <div class="cv-firmas">
-                <div class="cv-firma"><div class="cv-linea"></div><span class="cv-flabel">Firma del Cliente</span></div>
-                <div class="cv-firma"><div class="cv-linea"></div><span class="cv-flabel">Firma del Servidor — ISHUME</span></div>
-            </div>
-        </div>
-    `;
-
-    document.getElementById('modal-doc').classList.add('visible');
-    document.getElementById('modal-doc').scrollTop = 0;
-}
 
 function cerrarDoc() {
     document.getElementById('modal-doc').classList.remove('visible');
@@ -470,12 +348,6 @@ document.getElementById('modal-doc').addEventListener('click', function(e) {
     if (e.target === this) cerrarDoc();
 });
 
-function confirmarEliminar(id, nombre) {
-    if (confirm('¿Eliminar el contrato N° '+id+' de "'+nombre+'"?\nEsta acción no se puede deshacer.')) {
-        document.getElementById('delete-id').value = id;
-        document.getElementById('form-delete').submit();
-    }
-}
 </script>
 
 </body>

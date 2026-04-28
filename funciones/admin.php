@@ -59,7 +59,7 @@ function iconoBorrar(): string
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Administración — ISHUME</title>
-    <link href="../estilos/admin.css" rel="stylesheet" />
+    <link href="../css/admin.css" rel="stylesheet" />
 </head>
 
 <body>

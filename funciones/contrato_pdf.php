@@ -59,6 +59,7 @@ $stmt = $pdo->prepare("
         sn.fecha_entrega,
         sn.unidades,
         sn.formato,
+        sn.fecha_formato,
         COALESCE(sn.material, e.material) AS material,
         sn.condiciones_json
     FROM snapshot_contrato sn
@@ -84,7 +85,7 @@ if (!$ct) {
             ts.nombre_servicio,
             p.monto_total, p.adelanto, p.saldo, p.fecha_limite,
             fp.nombre_pago,
-            e.fecha AS fecha_entrega, e.unidades, e.material,
+            e.fecha AS fecha_entrega, e.unidades, e.material, e.fecha_formato,
             f.tipo  AS formato,
             NULL    AS condiciones_json
         FROM detalle_contrato dc
@@ -263,7 +264,7 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Contrato N° <?= $numContrato ?> — ISHUME</title>
-    <link rel="stylesheet" href="../estilos/pdf.css">
+    <link rel="stylesheet" href="../css/pdf.css">
 </head>
 
 <body>
@@ -333,7 +334,7 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                         <!-- Cliente 1 -->
                         <td class="bloque">
                             <?php if ($hay_c2): ?>
-                                <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#f07c00;margin-bottom:4px;">Cliente 1</div>
+                                <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#f07c00;margin-bottom:4px;margin-left:4px;">Cliente 1</div>
                             <?php endif; ?>
                             <table class="tbl">
                                 <tr><td class="l">Nombre</td><td><?= htmlspecialchars($ct['cliente'] ?? '—') ?></td></tr>
@@ -348,7 +349,7 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                         <!-- Cliente 2 (solo si existe) -->
                         <td class="bloque">
                             <?php if ($hay_c2): ?>
-                                <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#f07c00;margin-bottom:4px;">Cliente 2</div>
+                                <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#f07c00;margin-bottom:4px;margin-left:4px;">Cliente 2</div>
                                 <table class="tbl">
                                     <tr><td class="l">Nombre</td><td><?= htmlspecialchars($ct['cliente2_nombre'] ?? '—') ?></td></tr>
                                     <tr><td class="l">DNI</td><td><?= htmlspecialchars($ct['cliente2_dni'] ?? '—') ?></td></tr>
@@ -457,16 +458,16 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                     <tr>
                         <td class="bloque">
                             <table class="tbl">
-                                <tr><td class="l">Fecha de entrega del material</td><td><?= fd($ct['fecha_entrega'] ?? '') ?></td></tr>
-                                <?php if (!empty($ct['material'])): ?>
-                                <tr><td class="l">Material</td><td><?= htmlspecialchars($ct['material']) ?></td></tr>
-                                <?php endif; ?>
+                                <tr><td class="l">Fecha entrega del material</td><td><?= fd($ct['fecha_entrega'] ?? '') ?></td></tr>
+                                <tr><td class="l">Material</td><td>
+                                    <?= !empty($ct['material']) ? htmlspecialchars($ct['material']) : '<em style="color:#aaa;font-style:italic">Confirmar</em>' ?></td></tr>
                             </table>
                         </td>
                         <td class="bloque">
                             <table class="tbl">
                                 <tr><td class="l">Formato</td><td><?= $ct['formato'] ? htmlspecialchars($ct['formato']) : '<em style="color:#aaa;font-style:italic">Confirmar</em>' ?></td></tr>
                                 <tr><td class="l">N° unidades</td><td><?= ($ct['unidades'] !== null && $ct['unidades'] !== '') ? htmlspecialchars($ct['unidades']) : '<em style="color:#aaa;font-style:italic">Confirmar</em>' ?></td></tr>
+                                <tr><td class="l">Fecha entrega del formato</td><td><?= fd($ct['fecha_formato'] ?? '') ?></td></tr>
                             </table>
                         </td>
                     </tr>

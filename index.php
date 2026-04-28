@@ -24,7 +24,7 @@ if ($ultimoBackup) {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ISHUME — Sistema de Contratos</title>
-  <link href="estilos/estilo.css" rel="stylesheet" />
+  <link href="css/estilo.css" rel="stylesheet" />
 </head>
 
 <body>
