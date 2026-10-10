@@ -1,15 +1,7 @@
 <?php
 //Procesa Agregar / Editar / Borrar
 
-$host = '127.0.0.1';
-$port = '3307';
-$db = 'administracion';
-$user = 'root';
-$pass = '';
-$charset = 'utf8mb4';
-
-$dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
-
+require_once '../conexion/conexion.php';
 function redirigir(string $tab, string $param, string $mensaje): never
 {
     $url = 'admin.php?tab=' . urlencode($tab)
@@ -26,12 +18,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $accion = $_POST['accion'] ?? '';
 $tipo = $_POST['tipo'] ?? '';
 $tab_retorno = $_POST['tab_retorno'] ?? 'servicios';
-
-try {
-    $pdo = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-} catch (PDOException $e) {
-    redirigir($tab_retorno, 'error', 'Error de conexión: ' . $e->getMessage());
-}
 
 //  AGREGAR
 

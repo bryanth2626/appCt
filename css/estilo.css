@@ -6,7 +6,9 @@
 }
 
 body {
-  background: url("img/logo.jpeg") no repeat center center fixed;
+  background: 
+    linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+    url("../img/fondo.jpeg") no-repeat center center fixed;
   background-size: cover;
   color: #111111;
   font-family: 'Montserrat', sans-serif;
@@ -149,7 +151,7 @@ main {
   font-weight: 700;
   letter-spacing: 0.35em;
   text-transform: uppercase;
-  color: #f07c00;
+  color: white;
   margin-bottom: 10px;
 }
 
@@ -158,7 +160,7 @@ main {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #111;
+  color: white;
   line-height: 1.1;
 }
 
@@ -442,4 +444,37 @@ main {
 
 .ab-cerrar:hover {
   color: #666;
+}
+
+.firmas {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 40px;
+    gap: 20px;
+}
+
+.firmas-doble {
+    justify-content: space-between;
+}
+
+.firma-centro {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.firma-box {
+    width: 45%;
+    text-align: center;
+}
+
+.firma-linea {
+    border-top: 1px solid #000;
+    margin-bottom: 5px;
+    height: 40px;
+}
+
+.firma-label {
+    font-size: 11px;
+    color: #444;
 }

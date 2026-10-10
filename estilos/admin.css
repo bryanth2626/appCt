@@ -1,0 +1,727 @@
+/* ── Reset ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #f0f0f0;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  color: #111;
+}
+
+/* ── Página centrada ── */
+.pagina {
+  width: 960px;
+  margin: 30px auto 50px;
+  background: #fff;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* ── HEADER ── */
+.doc-header {
+  display: flex;
+  background: #000;
+  overflow: hidden;
+}
+
+.doc-header-logo {
+  background: #000;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  min-width: 180px;
+  clip-path: polygon(0 0, 85% 0, 100% 100%, 0 100%);
+}
+
+.doc-header-logo img {
+  height: 70px;
+  width: auto;
+}
+
+.doc-header-info {
+  background: #f07c00;
+  flex: 1;
+  padding: 14px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.doc-header-info h1 {
+  font-size: 18px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #fff;
+  letter-spacing: 0.04em;
+}
+
+.doc-header-info p {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 2px;
+}
+
+/* ── Cuerpo ── */
+.doc-body {
+  padding: 24px 32px 36px;
+}
+
+/* ── Título de página ── */
+.doc-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #f07c00;
+  padding-bottom: 10px;
+  margin-bottom: 28px;
+}
+
+.doc-title-row h2 {
+  font-size: 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #111;
+}
+
+/* ── Tabs de navegación entre catálogos ── */
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e8e8e8;
+}
+
+.tab-btn {
+  padding: 10px 24px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  border: none;
+  background: transparent;
+  color: #999;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-family: Arial, sans-serif;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.tab-btn:hover {
+  color: #f07c00;
+}
+
+.tab-btn.active {
+  color: #f07c00;
+  border-bottom-color: #f07c00;
+}
+
+/* ── Panel de cada catálogo ── */
+.tab-panel {
+  display: none;
+}
+.tab-panel.active {
+  display: block;
+}
+
+/* ── Cabecera de sección con botón agregar ── */
+.seccion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.seccion-header h3 {
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #111;
+  border-left: 4px solid #f07c00;
+  padding-left: 8px;
+}
+
+/* ── Tabla de catálogo ── */
+.tabla-admin {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+
+.tabla-admin thead tr {
+  background: #111;
+}
+
+.tabla-admin th {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #fff;
+  padding: 10px 14px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tabla-admin th.th-acciones {
+  text-align: center;
+  width: 100px;
+}
+
+.tabla-admin tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.15s;
+}
+
+.tabla-admin tbody tr:hover {
+  background: #fff8f2;
+}
+
+.tabla-admin td {
+  padding: 10px 14px;
+  vertical-align: middle;
+  font-size: 12.5px;
+}
+
+.td-id {
+  font-weight: 800;
+  color: #f07c00;
+  font-size: 13px;
+  width: 50px;
+}
+
+.td-acciones {
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* ── Botones icono ── */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid #e0e0e0;
+  background: #fff;
+  cursor: pointer;
+  border-radius: 2px;
+  color: #555;
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
+  margin: 0 2px;
+}
+
+.btn-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-edit:hover {
+  border-color: #f07c00;
+  color: #f07c00;
+  background: #fff3e0;
+}
+.btn-del:hover {
+  border-color: #c0392b;
+  color: #c0392b;
+  background: #fdecea;
+}
+
+/* ── Empty state ── */
+.empty-row td {
+  text-align: center;
+  color: #bbb;
+  padding: 40px 20px;
+  font-size: 13px;
+}
+
+/* ── Botones generales ── */
+.btn {
+  display: inline-block;
+  padding: 9px 22px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  border: none;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+  text-decoration: none;
+  transition: background 0.2s;
+  border-radius: 2px;
+  line-height: 1;
+}
+
+.btn-sm {
+  padding: 7px 16px;
+  font-size: 10px;
+}
+
+.btn-primary {
+  background: #f07c00;
+  color: #fff;
+}
+.btn-primary:hover {
+  background: #d06800;
+}
+.btn-secondary {
+  background: #eee;
+  color: #444;
+}
+.btn-secondary:hover {
+  background: #ddd;
+}
+.btn-danger {
+  background: #c0392b;
+  color: #fff;
+}
+.btn-danger:hover {
+  background: #a93226;
+}
+
+/* ── Volver ── */
+.acciones {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* ── Mensajes ── */
+.msg {
+  padding: 11px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+.msg-ok {
+  background: #e6f4ea;
+  color: #1a7a30;
+  border-left: 4px solid #1a7a30;
+}
+.msg-error {
+  background: #fdecea;
+  color: #c0392b;
+  border-left: 4px solid #c0392b;
+}
+
+/* ══════════════════════════════
+   MODALES
+══════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.modal-overlay.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal-box {
+  background: #fff;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+  transform: translateY(12px);
+  transition: transform 0.2s;
+}
+
+.modal-overlay.visible .modal-box {
+  transform: translateY(0);
+}
+
+.modal-header {
+  background: #111;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #fff;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+  transition: color 0.15s;
+}
+
+.modal-close:hover {
+  color: #f07c00;
+}
+
+.modal-body {
+  padding: 22px 24px 24px;
+}
+
+/* ── Campos del modal ── */
+.campo-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.campo-modal label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #666;
+}
+
+.campo-modal input,
+.campo-modal textarea,
+.campo-modal select {
+  border: none;
+  border-bottom: 1.5px solid #ccc;
+  background: transparent;
+  padding: 6px 2px;
+  font-size: 13px;
+  font-family: Arial, sans-serif;
+  color: #111;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s;
+  resize: vertical;
+}
+
+.campo-modal input:focus,
+.campo-modal textarea:focus,
+.campo-modal select:focus {
+  border-bottom-color: #f07c00;
+}
+
+.campo-modal textarea {
+  min-height: 70px;
+}
+
+.modal-footer-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* ── Modal de confirmación de borrado ── */
+.modal-confirm-texto {
+  font-size: 13px;
+  color: #444;
+  line-height: 1.6;
+  margin-bottom: 6px;
+}
+
+.modal-confirm-nombre {
+  font-weight: 800;
+  color: #111;
+}
+
+.aviso-borrado {
+  font-size: 11px;
+  color: #c0392b;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+/* ── FOOTER ── */
+.doc-footer {
+  background: #000;
+  position: relative;
+  overflow: hidden;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.doc-footer::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 70px;
+  height: 100%;
+  background: #f07c00;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.doc-footer span {
+  font-size: 10px;
+  color: #888;
+  letter-spacing: 0.06em;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Precio badge ── */
+.precio-tag {
+  display: inline-block;
+  background: #fff3e0;
+  color: #e65100;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 2px;
+}
+
+/* ── Condicion número ── */
+.cond-num {
+  font-size: 10px;
+  color: #bbb;
+  font-weight: 700;
+  text-align: center;
+  width: 30px;
+}
+
+.cond-texto {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* ── Nota informativa ── */
+.nota-info {
+  background: #fafafa;
+  border-left: 3px solid #f07c00;
+  padding: 10px 14px;
+  font-size: 11.5px;
+  color: #666;
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+/* ── Estado del backup ── */
+.estado-card {
+  padding: 20px 28px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-family: Arial, sans-serif;
+}
+
+.estado-ok {
+  background: #e6f4ea;
+  border-left: 5px solid #1a7a30;
+}
+.estado-aviso {
+  background: #fff3e0;
+  border-left: 5px solid #f07c00;
+}
+.estado-urgente {
+  background: #fdecea;
+  border-left: 5px solid #c0392b;
+}
+.estado-nunca {
+  background: #fdecea;
+  border-left: 5px solid #c0392b;
+}
+
+.estado-emoji {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.estado-texto h3 {
+  font-size: 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.estado-ok h3 {
+  color: #1a7a30;
+}
+.estado-aviso h3 {
+  color: #e65100;
+}
+.estado-urgente h3 {
+  color: #c0392b;
+}
+.estado-nunca h3 {
+  color: #c0392b;
+}
+
+.estado-texto p {
+  font-size: 12.5px;
+  color: #555;
+  line-height: 1.5;
+}
+
+/* ── Estadísticas ── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.stat-box {
+  background: #fafafa;
+  border: 1px solid #ebebeb;
+  padding: 16px 12px;
+  text-align: center;
+}
+
+.stat-n {
+  font-size: 28px;
+  font-weight: 900;
+  color: #f07c00;
+  display: block;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+.stat-l {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #999;
+}
+
+/* ── Botón principal de descarga ── */
+.descarga-zona {
+  border: 2px dashed #e0e0e0;
+  padding: 36px 28px;
+  text-align: center;
+  margin-bottom: 24px;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.descarga-zona:hover {
+  border-color: #f07c00;
+  background: #fffaf5;
+}
+
+.descarga-zona p {
+  font-size: 12.5px;
+  color: #888;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.btn-descarga {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 40px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  background: #f07c00;
+  color: #fff;
+  text-decoration: none;
+  transition:
+    background 0.2s,
+    transform 0.1s;
+  border-radius: 2px;
+}
+
+.btn-descarga:hover {
+  background: #d06800;
+  transform: translateY(-1px);
+}
+.btn-descarga:active {
+  transform: translateY(0);
+}
+
+.btn-descarga svg {
+  width: 20px;
+  height: 20px;
+}
+
+.descarga-nota {
+  font-size: 11px;
+  color: #bbb;
+  margin-top: 12px;
+}
+
+/* ── Instrucciones de restauración ── */
+.instrucciones {
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  padding: 20px 24px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #555;
+}
+
+.instrucciones h4 {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #111;
+  border-bottom: 1px solid #e8e8e8;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.instrucciones ol {
+  padding-left: 20px;
+}
+.instrucciones li {
+  margin-bottom: 5px;
+}
+.instrucciones code {
+  background: #eee;
+  padding: 1px 5px;
+  font-size: 11px;
+  font-family: monospace;
+}
+
+.tip-guardar {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: #fff3e0;
+  border-left: 3px solid #f07c00;
+  font-size: 11.5px;
+  color: #e65100;
+  font-weight: 600;
+}

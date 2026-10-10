@@ -405,36 +405,6 @@ body {
   border-left: 4px solid #c0392b;
 }
 
-/* ── FOOTER ── */
-.doc-footer {
-  background: #000;
-  position: relative;
-  overflow: hidden;
-  padding: 10px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.doc-footer::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 70px;
-  height: 100%;
-  background: #f07c00;
-  clip-path: polygon(100% 0, 100% 100%, 0 100%);
-}
-
-.doc-footer span {
-  font-size: 10px;
-  color: #888;
-  letter-spacing: 0.06em;
-  position: relative;
-  z-index: 1;
-}
-
 /* ═══════════════════════════════
    MODALES
 ═══════════════════════════════ */
@@ -1396,6 +1366,13 @@ body {
   flex-shrink: 0;
 }
 
+.doc-hoja {
+  background: #fff;
+  width: 760px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
 .doc-view-hoja {
   background: #fff;
   width: 760px;
@@ -1559,7 +1536,10 @@ body {
   letter-spacing: 0.1em;
   padding: 3px 10px;
 }
-
+.badge-reserva {
+  background: #eee;
+  color: #555;
+}
 /* Botón historial */
 .btn-hist {
   color: #2c3e50 !important;
@@ -1569,4 +1549,15 @@ body {
   border-color: #2c3e50 !important;
   background: #eaf0f6 !important;
   color: #2c3e50 !important;
+}
+
+/* Aviso "datos originales" */
+.aviso-original {
+  background: #fff3e0;
+  border-left: 3px solid #f07c00;
+  padding: 7px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #e65100;
+  margin-bottom: 14px;
 }

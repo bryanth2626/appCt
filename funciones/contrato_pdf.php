@@ -3,14 +3,8 @@
 //  contrato_pdf.php — Vista imprimible del contrato
 //  Ubicación: /empresa/funciones/contrato_pdf.php
 // ══════════════════════════════════════════════════════
-$host = '127.0.0.1';
-$port = '3307';
-$db = 'administracion';
-$user = 'root';
-$pass = '';
-$charset = 'utf8mb4';
+require_once '../conexion/conexion.php';
 
-$dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
 
 $id = (int) ($_GET['id'] ?? 0);
 if ($id <= 0) {
@@ -20,12 +14,6 @@ if ($id <= 0) {
 
 // Modo: 'preview' (default) o 'print' (dispara window.print al cargar)
 $modo = $_GET['modo'] ?? 'preview';
-
-try {
-    $pdo = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-} catch (PDOException $e) {
-    die('Error de conexión: ' . $e->getMessage());
-}
 
 // ── Leer del SNAPSHOT primero (datos originales firmados)
 // Si no existe snapshot (contrato registrado antes de la actualización),
@@ -135,9 +123,13 @@ $stmtPagoActual->execute([$id]);
 $pagoActual = $stmtPagoActual->fetch(PDO::FETCH_ASSOC);
 $saldoActual = (float) ($pagoActual['saldo'] ?? (float) ($ct['saldo'] ?? 0));
 $fechaLimActual = $pagoActual['fecha_limite'] ?? $ct['fecha_limite'] ?? '';
-
+$montoTotalActual = $pagoActual['monto_total'] ?? null;
 // Estado siempre con valores actuales
-if ($saldoActual <= 0) {
+if ($montoTotalActual === null) {
+    $estado = 'Reserva';
+    $estadoColor = '#555';
+    $estadoBg = '#eee';
+} elseif ($saldoActual <= 0) {
     $estado = 'Pagado';
     $estadoColor = '#1a7a30';
     $estadoBg = '#e6f4ea';
@@ -163,7 +155,7 @@ if ($origen === 'edicion') {
             c.nombre AS cliente, c.dni, c.email, c.telefono,
             c.direccion AS cliente_dir,
             ts.nombre_servicio,
-            e.fecha AS fecha_entrega, e.unidades, e.material,
+            e.fecha AS fecha_entrega,e.fecha_formato, e.unidades, e.material,
             f.tipo  AS formato
         FROM detalle_contrato dc
         JOIN  cliente       c   ON c.id_cliente    = dc.cliente_id
@@ -184,7 +176,7 @@ if ($origen === 'edicion') {
         $ct['cliente2_dni']      = $vivo['cliente2_dni'];
         $ct['cliente2_telefono'] = $vivo['cliente2_telefono'];
         $ct['cliente2_email']    = $vivo['cliente2_email'];
-        $ct['cliente2_direccion']= $vivo['cliente2_direccion'];
+        $ct['cliente2_direccion'] = $vivo['cliente2_direccion'];
         $ct['nombre_servicio']   = $vivo['nombre_servicio'];
         $ct['servicio_detalle']  = $vivo['servicio_detalle'];
         $ct['fecha_evento']      = $vivo['fecha_evento'];
@@ -193,6 +185,7 @@ if ($origen === 'edicion') {
         $ct['provincia']         = $vivo['provincia'];
         $ct['proforma']          = $vivo['proforma'];
         $ct['fecha_entrega']     = $vivo['fecha_entrega'];
+        $ct['fecha_formato']     = $vivo['fecha_formato'];
         $ct['unidades']          = $vivo['unidades'];
         $ct['material']          = $vivo['material'];
         $ct['formato']           = $vivo['formato'];
@@ -214,12 +207,11 @@ if ($origen === 'edicion') {
     ");
     $stmtCvivo->execute([$id]);
     $condiciones = $stmtCvivo->fetchAll(PDO::FETCH_COLUMN);
-
 } else {
     // origen=lista: todo del snapshot (original firmado)
-    $saldo = (float) ($ct['saldo'] ?? 0);
-    $adelantoDoc = (float) ($ct['adelanto'] ?? 0);
-    $montoTotalDoc = (float) ($ct['monto_total'] ?? 0);
+    $saldo = $ct['saldo'] ?? null;
+    $adelantoDoc = $ct['adelanto'] ?? null;
+    $montoTotalDoc = $ct['monto_total'] ?? null;
     $fechaLimDoc = $ct['fecha_limite'] ?? '';
     $formaPagoDoc = $ct['nombre_pago'] ?? '—';
     // condiciones ya asignadas arriba (snapshot o fallback)
@@ -250,9 +242,12 @@ function fh(?string $h): string
         return '<em style="color:#aaa;font-style:italic">Por confirmar</em>';
     return date('g:i A', $ts); // ej: 4:25 PM
 }
-function fm(float $v): string
+function fm($v): string
 {
-    return 'S/ ' . number_format($v, 2);
+    if ($v === null) {
+        return '<em style="color:#aaa;font-style:italic">Por confirmar</em>';
+    }
+    return 'S/ ' . number_format((float)$v, 2);
 }
 
 $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 semana para realizar algún reclamo o cambio. Pasando la semana no hay reclamo alguno *';
@@ -337,12 +332,27 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                                 <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#f07c00;margin-bottom:4px;margin-left:4px;">Cliente 1</div>
                             <?php endif; ?>
                             <table class="tbl">
-                                <tr><td class="l">Nombre</td><td><?= htmlspecialchars($ct['cliente'] ?? '—') ?></td></tr>
-                                <tr><td class="l">DNI</td><td><?= htmlspecialchars($ct['dni'] ?? '—') ?></td></tr>
-                                <tr><td class="l">Teléfono</td><td><?= htmlspecialchars($ct['telefono'] ?? '—') ?></td></tr>
-                                <tr><td class="l">Email</td><td><?= htmlspecialchars($ct['email'] ?? '—') ?></td></tr>
+                                <tr>
+                                    <td class="l">Nombre</td>
+                                    <td><?= htmlspecialchars($ct['cliente'] ?? '—') ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="l">DNI</td>
+                                    <td><?= htmlspecialchars($ct['dni'] ?? '—') ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="l">Teléfono</td>
+                                    <td><?= htmlspecialchars($ct['telefono'] ?? '—') ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="l">Email</td>
+                                    <td><?= htmlspecialchars($ct['email'] ?? '—') ?></td>
+                                </tr>
                                 <?php if (!empty($ct['cliente_dir'])): ?>
-                                <tr><td class="l">Dirección</td><td><?= htmlspecialchars($ct['cliente_dir']) ?></td></tr>
+                                    <tr>
+                                        <td class="l">Dirección</td>
+                                        <td><?= htmlspecialchars($ct['cliente_dir']) ?></td>
+                                    </tr>
                                 <?php endif; ?>
                             </table>
                         </td>
@@ -351,12 +361,27 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                             <?php if ($hay_c2): ?>
                                 <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#f07c00;margin-bottom:4px;margin-left:4px;">Cliente 2</div>
                                 <table class="tbl">
-                                    <tr><td class="l">Nombre</td><td><?= htmlspecialchars($ct['cliente2_nombre'] ?? '—') ?></td></tr>
-                                    <tr><td class="l">DNI</td><td><?= htmlspecialchars($ct['cliente2_dni'] ?? '—') ?></td></tr>
-                                    <tr><td class="l">Teléfono</td><td><?= htmlspecialchars($ct['cliente2_telefono'] ?? '—') ?></td></tr>
-                                    <tr><td class="l">Email</td><td><?= htmlspecialchars($ct['cliente2_email'] ?? '—') ?></td></tr>
+                                    <tr>
+                                        <td class="l">Nombre</td>
+                                        <td><?= htmlspecialchars($ct['cliente2_nombre'] ?? '—') ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="l">DNI</td>
+                                        <td><?= htmlspecialchars($ct['cliente2_dni'] ?? '—') ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="l">Teléfono</td>
+                                        <td><?= htmlspecialchars($ct['cliente2_telefono'] ?? '—') ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="l">Email</td>
+                                        <td><?= htmlspecialchars($ct['cliente2_email'] ?? '—') ?></td>
+                                    </tr>
                                     <?php if (!empty($ct['cliente2_direccion'])): ?>
-                                    <tr><td class="l">Dirección</td><td><?= htmlspecialchars($ct['cliente2_direccion']) ?></td></tr>
+                                        <tr>
+                                            <td class="l">Dirección</td>
+                                            <td><?= htmlspecialchars($ct['cliente2_direccion']) ?></td>
+                                        </tr>
                                     <?php endif; ?>
                                 </table>
                             <?php endif; ?>
@@ -382,8 +407,8 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                                         <td>
                                             <?= htmlspecialchars(
                                                 !empty($ct['servicio_detalle'])
-                                                ? $ct['servicio_detalle']
-                                                : ($ct['nombre_servicio'] ?? '—')
+                                                    ? $ct['servicio_detalle']
+                                                    : ($ct['nombre_servicio'] ?? '—')
                                             ) ?>
                                         </td>
                                     </tr>
@@ -436,8 +461,8 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                         <tr>
                             <td class="bold"><?= fm($montoTotalDoc) ?></td>
                             <td class="bold"><?= fm($adelantoDoc) ?></td>
-                            <td class="bold" style="color:<?= $saldo <= 0 ? '#1a7a30' : '#c0392b' ?>">
-                                <?= fm($saldo) ?>
+                            <td class="bold">
+                                <?= $montoTotalDoc === null ? '<em style="color:#aaa">Por confirmar</em>' : fm($saldo) ?>
                             </td>
                             <td><?= htmlspecialchars($formaPagoDoc) ?></td>
                             <td><?= fd($fechaLimDoc) ?></td>
@@ -458,16 +483,31 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                     <tr>
                         <td class="bloque">
                             <table class="tbl">
-                                <tr><td class="l">Fecha entrega del material</td><td><?= fd($ct['fecha_entrega'] ?? '') ?></td></tr>
-                                <tr><td class="l">Material</td><td>
-                                    <?= !empty($ct['material']) ? htmlspecialchars($ct['material']) : '<em style="color:#aaa;font-style:italic">Confirmar</em>' ?></td></tr>
+                                <tr>
+                                    <td class="l">Fecha entrega del material</td>
+                                    <td><?= fd($ct['fecha_entrega'] ?? '') ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="l">Material</td>
+                                    <td>
+                                        <?= !empty($ct['material']) ? htmlspecialchars($ct['material']) : '<em style="color:#aaa;font-style:italic">Confirmar</em>' ?></td>
+                                </tr>
                             </table>
                         </td>
                         <td class="bloque">
                             <table class="tbl">
-                                <tr><td class="l">Formato</td><td><?= $ct['formato'] ? htmlspecialchars($ct['formato']) : '<em style="color:#aaa;font-style:italic">Confirmar</em>' ?></td></tr>
-                                <tr><td class="l">N° unidades</td><td><?= ($ct['unidades'] !== null && $ct['unidades'] !== '') ? htmlspecialchars($ct['unidades']) : '<em style="color:#aaa;font-style:italic">Confirmar</em>' ?></td></tr>
-                                <tr><td class="l">Fecha entrega del formato</td><td><?= fd($ct['fecha_formato'] ?? '') ?></td></tr>
+                                <tr>
+                                    <td class="l">Formato</td>
+                                    <td><?= $ct['formato'] ? htmlspecialchars($ct['formato']) : '<em style="color:#aaa;font-style:italic">Confirmar</em>' ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="l">N° unidades</td>
+                                    <td><?= ($ct['unidades'] !== null && $ct['unidades'] !== '') ? htmlspecialchars($ct['unidades']) : '<em style="color:#aaa;font-style:italic">Confirmar</em>' ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="l">Fecha entrega del formato</td>
+                                    <td><?= fd($ct['fecha_formato'] ?? '') ?></td>
+                                </tr>
                             </table>
                         </td>
                     </tr>
@@ -490,18 +530,52 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
             </div>
 
             <!-- FIRMAS -->
-            <div class="firmas">
-                <div class="firma">
-                    <div class="firma-linea"></div>
-                    <span class="firma-label">Firma del Cliente</span>
+            <?php $hayCliente2 = isset($ct['cliente2_nombre']) && trim($ct['cliente2_nombre']) !== '';?>
+
+            <?php if ($hayCliente2): ?>
+
+                <!-- 2 clientes -->
+                <div class="firmas-clientes">
+                    <div class="firma">
+                        <div class="firma-linea"></div>
+                        <div class="firma-label">Firma del Cliente 1</div>
+                    </div>
+
+                    <div class="firma">
+                        <div class="firma-linea"></div>
+                        <div class="firma-label">Firma del Cliente 2</div>
+                    </div>
                 </div>
-                <div class="firma">
-                    <div class="firma-linea"></div>
-                    <span class="firma-label">Firma de la empresa — ISHUME</span>
+
+                <div class="firma-centro">
+                    <div class="firma">
+                        <div class="firma-linea"></div>
+                        <div class="firma-label">Firma de la empresa — ISHUME</div>
+                    </div>
                 </div>
-            </div>
+
+            <?php else: ?>
+
+                <!-- 1 cliente -->
+                <div class="firmas-normal">
+                    <div class="firma">
+                        <div class="firma-linea"></div>
+                        <div class="firma-label">Firma del Cliente</div>
+                    </div>
+
+                    <div class="firma">
+                        <div class="firma-linea"></div>
+                        <div class="firma-label">Firma de la empresa — ISHUME</div>
+                    </div>
+                </div>
+
+            <?php endif; ?>
 
         </div>
+
+    </div>
+
+    </div>
 
     </div>
 
@@ -520,8 +594,11 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
             document.title = 'Contrato_<?= $numContrato ?>_<?= preg_replace('/[^A-Za-z0-9]/', '_', $ct['cliente']) ?>';
             window.print();
             // Restaurar título después de que el diálogo se abra
-            setTimeout(() => { document.title = tituloOriginal; }, 500);
+            setTimeout(() => {
+                document.title = tituloOriginal;
+            }, 500);
         }
+
 
         <?php if ($modo === 'print'): ?>
             // Modo automático: disparar impresión al cargar

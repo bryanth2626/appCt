@@ -1,25 +1,6 @@
 <?php
-
 //Gestión Post-Contrato
-
-$host = '127.0.0.1';
-$port = '3307';
-$db = 'administracion';
-$user = 'root';
-$pass = '';
-$charset = 'utf8mb4';
-
-$dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
-$pdo = null;
-$error_msg = '';
-$success_msg = '';
-
-try {
-    $pdo = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-} catch (PDOException $e) {
-    $error_msg = 'Error de conexión: ' . $e->getMessage();
-}
-
+require_once '../conexion/conexion.php';
 // ── Crear tabla historial si no existe (con sesion_id)
 if ($pdo) {
     $pdo->exec("
@@ -47,17 +28,21 @@ if ($pdo) {
 function valorCambio($a, $b): bool
 {
     // NULL y vacío son equivalentes
-    $a = ($a === null || $a === false) ? '' : trim((string)$a);
-    $b = ($b === null || $b === false) ? '' : trim((string)$b);
-    if ($a === $b) return false;
+    $a = ($a === null || $a === false) ? '' : trim((string) $a);
+    $b = ($b === null || $b === false) ? '' : trim((string) $b);
+    if ($a === $b)
+        return false;
     // Fechas inválidas (0000-00-00, año negativo) = vacío
-    $invalida = fn($v) => !$v || str_starts_with($v, '0000') || str_starts_with($v, '-') || (preg_match('/^-?\d+/', $v) && (int)explode('-', ltrim($v,'-'))[0] < 1900);
-    if ($invalida($a)) $a = '';
-    if ($invalida($b)) $b = '';
-    if ($a === $b) return false;
+    $invalida = fn($v) => !$v || str_starts_with($v, '0000') || str_starts_with($v, '-') || (preg_match('/^-?\d+/', $v) && (int) explode('-', ltrim($v, '-'))[0] < 1900);
+    if ($invalida($a))
+        $a = '';
+    if ($invalida($b))
+        $b = '';
+    if ($a === $b)
+        return false;
     // Decimales: comparar como float redondeado a 2
     if (is_numeric($a) && is_numeric($b)) {
-        return round((float)$a, 2) !== round((float)$b, 2);
+        return (string) (float) $a !== (string) (float) $b;
     }
     // Horas (HH:MM:SS vs HH:MM): comparar solo HH:MM
     if (preg_match('/^\d{2}:\d{2}/', $a) && preg_match('/^\d{2}:\d{2}/', $b)) {
@@ -68,27 +53,31 @@ function valorCambio($a, $b): bool
 
 function formatearValor(string $campo, $valor): string
 {
-    if ($valor === null || $valor === '') return '—';
+    if ($valor === null || $valor === '')
+        return '—';
     // Montos
     if (in_array($campo, ['Monto total', 'Adelanto', 'Saldo'])) {
-        return 'S/ ' . number_format((float)$valor, 2);
+        return 'S/ ' . number_format((float) $valor, 2);
     }
     // Fechas — validar que no sean inválidas
     if (str_contains($campo, 'echa')) {
-        $v = (string)$valor;
-        if (!$v || str_starts_with($v, '0000') || str_starts_with($v, '-')) return 'Por confirmar';
+        $v = (string) $valor;
+        if (!$v || str_starts_with($v, '0000') || str_starts_with($v, '-'))
+            return 'Por confirmar';
         $ts = @strtotime($v);
-        if (!$ts || $ts < 0 || date('Y', $ts) < 1900) return 'Por confirmar';
+        if (!$ts || $ts < 0 || date('Y', $ts) < 1900)
+            return 'Por confirmar';
         return date('d/m/Y', $ts);
     }
     // Horas — mostrar en formato 12h AM/PM
     if (str_contains($campo, 'ora') || str_contains($campo, 'inicio')) {
-        $v = (string)$valor;
-        if (!$v || $v === '00:00:00') return 'Por confirmar';
+        $v = (string) $valor;
+        if (!$v || $v === '00:00:00')
+            return 'Por confirmar';
         $ts = @strtotime('1970-01-01 ' . $v);
         return $ts ? date('g:i A', $ts) : substr($v, 0, 5);
     }
-    return (string)$valor;
+    return (string) $valor;
 }
 
 // ══════════════════════════════════════════════════════
@@ -135,22 +124,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edita
         $ho_inicio = trim($_POST['ho_inicio'] ?? '');
         $fecha_evento = trim($_POST['fecha_evento'] ?? '');
         $servicio_id = (int) $_POST['servicio_id'];
-        $monto_total = (float) $_POST['monto_total'];
+        $monto_total = ($_POST['monto_total'] === '')
+            ? null
+            : (float) $_POST['monto_total'];
         $adelanto = (float) $_POST['adelanto'];
-        $saldo = round($monto_total - $adelanto, 2);
+        $saldo = ($monto_total === null)
+            ? null
+            : round($monto_total - $adelanto, 2);
         $fecha_limite = trim($_POST['fecha_limite'] ?? '');
         $forma_id = (int) $_POST['forma_id'];
         $fecha_entrega = trim($_POST['fecha_entrega'] ?? '');
         $fecha_formato = trim($_POST['fecha_formato'] ?? '');
-        $material      = trim($_POST['material'] ?? '');
-        $unidades      = $_POST['unidades'] !== '' ? (int)$_POST['unidades'] : null;
-        $formato_id    = (int) $_POST['formato_id'];
-        $c2_nombre     = trim($_POST['c2_nombre']    ?? '');
-        $c2_dni        = trim($_POST['c2_dni']       ?? '');
-        $c2_telefono   = trim($_POST['c2_telefono']  ?? '');
-        $c2_email      = trim($_POST['c2_email']     ?? '');
-        $c2_direccion  = trim($_POST['c2_direccion'] ?? '');
-        $dir_cliente   = trim($_POST['direccion_cliente'] ?? '');
+        $material = trim($_POST['material'] ?? '');
+        $unidades = $_POST['unidades'] !== '' ? (int) $_POST['unidades'] : null;
+        $formato_id = (int) $_POST['formato_id'];
+        $c2_nombre = trim($_POST['c2_nombre'] ?? '');
+        $c2_dni = trim($_POST['c2_dni'] ?? '');
+        $c2_telefono = trim($_POST['c2_telefono'] ?? '');
+        $c2_email = trim($_POST['c2_email'] ?? '');
+        $c2_direccion = trim($_POST['c2_direccion'] ?? '');
+        $dir_cliente = trim($_POST['direccion_cliente'] ?? '');
         $condiciones_sel = array_map('intval', $_POST['condiciones_sel'] ?? []);
 
         // ── Obtener nombres legibles para campos foráneos
@@ -170,10 +163,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edita
         $pdo->prepare("UPDATE detalle_contrato SET proforma=?,provincia=?,direccion=?,ho_inicio=?,fecha_evento=?,servicio_id=?,servicio_detalle=?,
             cliente2_nombre=?,cliente2_dni=?,cliente2_telefono=?,cliente2_email=?,cliente2_direccion=?
             WHERE id_contrato=?")
-            ->execute([$proforma, $provincia, $direccion, $ho_inicio ?: null, $fecha_evento ?: null,
-                $servicio_id, $servicio_detalle_nuevo ?: null,
-                $c2_nombre ?: null, $c2_dni ?: null, $c2_telefono ?: null, $c2_email ?: null, $c2_direccion ?: null,
-                $id]);
+            ->execute([
+                $proforma,
+                $provincia,
+                $direccion,
+                $ho_inicio ?: null,
+                $fecha_evento ?: null,
+                $servicio_id,
+                $servicio_detalle_nuevo ?: null,
+                $c2_nombre ?: null,
+                $c2_dni ?: null,
+                $c2_telefono ?: null,
+                $c2_email ?: null,
+                $c2_direccion ?: null,
+                $id
+            ]);
 
         $pdo->prepare("UPDATE pago SET monto_total=?,adelanto=?,saldo=?,fecha_limite=?,forma_id=? WHERE contrato_id=?")
             ->execute([$monto_total, $adelanto, $saldo, $fecha_limite, $forma_id, $id]);
@@ -190,36 +194,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edita
                     $stmtCond->execute([$id, $cid]);
             }
         }
+        // ── Actualizar modelos del contrato
+        $mod_ids  = $_POST['modelo_id']   ?? [];
+        $mod_cant = $_POST['modelo_cant'] ?? [];
+        $modelos_nuevos = [];
+        foreach ($mod_ids as $i => $mid) {
+            $mid  = (int)$mid;
+            $cant = (int)($mod_cant[$i] ?? 0);
+            if ($mid > 0 && $cant > 0) {
+                $modelos_nuevos[$mid] = ($modelos_nuevos[$mid] ?? 0) + $cant;
+            }
+        }
+        $pdo->prepare("DELETE FROM contrato_modelo WHERE id_contrato=?")->execute([$id]);
+        $stmtMod = $pdo->prepare("INSERT INTO contrato_modelo (id_contrato,id_modelo,cantidad) VALUES(?,?,?)");
+        foreach ($modelos_nuevos as $mid => $cant) {
+            $stmtMod->execute([$id, $mid, $cant]);
+        }
 
         // ── Detectar cambios reales y registrar en historial
         $comparar = [
-            'Nombre cliente'        => [$old['nombre'],             $nombre],
-            'DNI'                   => [$old['dni'],                $dni],
-            'Email'                 => [$old['email'],              $email],
-            'Teléfono'              => [$old['telefono'],           $telefono],
-            'Dirección cliente'     => [$old['dir_cliente'] ?? '',  $dir_cliente],
-            'Cliente 2 nombre'      => [$old['cliente2_nombre'] ?? '', $c2_nombre],
-            'Cliente 2 DNI'         => [$old['cliente2_dni'] ?? '', $c2_dni],
-            'Cliente 2 tel'         => [$old['cliente2_telefono'] ?? '', $c2_telefono],
-            'Cliente 2 email'       => [$old['cliente2_email'] ?? '', $c2_email],
-            'Cliente 2 dirección'   => [$old['cliente2_direccion'] ?? '', $c2_direccion],
-            'Proforma'              => [$old['proforma'],           $proforma],
-            'Provincia'             => [$old['provincia'],          $provincia],
-            'Dirección'             => [$old['direccion'],          $direccion],
-            'Hora inicio'           => [$old['ho_inicio'],          $ho_inicio],
-            'Fecha evento'          => [$old['fecha_evento'],       $fecha_evento],
-            'Evento'                => [$old['nombre_servicio'],    $nuevoServicio],
-            'Servicio detalle'      => [$old['servicio_detalle'] ?? '', $servicio_detalle_nuevo],
-            'Monto total'           => [$old['monto_total'],        $monto_total],
-            'Adelanto'              => [$old['adelanto'],           $adelanto],
-            'Saldo'                 => [$old['saldo'],              $saldo],
-            'Fecha límite pago'     => [$old['fecha_limite'],       $fecha_limite],
-            'Forma de pago'         => [$old['nombre_pago'],        $nuevaFormaPago],
-            'Fecha entrega material'=> [$old['fecha_entrega'],      $fecha_entrega],
+            'Nombre cliente' => [$old['nombre'], $nombre],
+            'DNI' => [$old['dni'], $dni],
+            'Email' => [$old['email'], $email],
+            'Teléfono' => [$old['telefono'], $telefono],
+            'Dirección cliente' => [$old['dir_cliente'] ?? '', $dir_cliente],
+            'Cliente 2 nombre' => [$old['cliente2_nombre'] ?? '', $c2_nombre],
+            'Cliente 2 DNI' => [$old['cliente2_dni'] ?? '', $c2_dni],
+            'Cliente 2 tel' => [$old['cliente2_telefono'] ?? '', $c2_telefono],
+            'Cliente 2 email' => [$old['cliente2_email'] ?? '', $c2_email],
+            'Cliente 2 dirección' => [$old['cliente2_direccion'] ?? '', $c2_direccion],
+            'Proforma' => [$old['proforma'], $proforma],
+            'Provincia' => [$old['provincia'], $provincia],
+            'Dirección' => [$old['direccion'], $direccion],
+            'Hora inicio' => [$old['ho_inicio'], $ho_inicio],
+            'Fecha evento' => [$old['fecha_evento'], $fecha_evento],
+            'Evento' => [$old['nombre_servicio'], $nuevoServicio],
+            'Servicio detalle' => [$old['servicio_detalle'] ?? '', $servicio_detalle_nuevo],
+            'Monto total' => [$old['monto_total'], $monto_total],
+            'Adelanto' => [$old['adelanto'], $adelanto],
+            'Saldo' => [$old['saldo'], $saldo],
+            'Fecha límite pago' => [$old['fecha_limite'], $fecha_limite],
+            'Forma de pago' => [$old['nombre_pago'], $nuevaFormaPago],
+            'Fecha entrega material' => [$old['fecha_entrega'], $fecha_entrega],
             'Fecha entrega formato' => [$old['fecha_formato'] ?? '', $fecha_formato],
-            'Material'              => [$old['material'] ?? '',     $material],
-            'Unidades'              => [$old['unidades'],           $unidades],
-            'Formato entrega'       => [$old['formato'],            $nuevoFormato],
+            'Material' => [$old['material'] ?? '', $material],
+            'Unidades' => [$old['unidades'], $unidades],
+            'Formato entrega' => [$old['formato'], $nuevoFormato],
         ];
 
         // Filtrar solo los que realmente cambiaron
@@ -254,7 +274,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edita
         $numCambios = count($cambiosReales);
         $success_msg = 'Contrato N° ' . str_pad($id, 3, '0', STR_PAD_LEFT) . ' actualizado. '
             . ($numCambios > 0 ? "$numCambios campo(s) modificado(s) registrado(s) en el historial." : 'Sin cambios detectados.');
-
     } catch (PDOException $e) {
         $pdo->rollBack();
         $error_msg = 'Error al guardar: ' . $e->getMessage();
@@ -338,6 +357,10 @@ if ($pdo) {
         ");
         $s->execute([$ct['id_contrato']]);
         $ct['condiciones_obj'] = $s->fetchAll(PDO::FETCH_ASSOC);
+        // Modelos
+        $m = $pdo->prepare("SELECT id_modelo, cantidad FROM contrato_modelo WHERE id_contrato = ?");
+        $m->execute([$ct['id_contrato']]);
+        $ct['modelos'] = $m->fetchAll(PDO::FETCH_ASSOC);
 
         // Historial — agrupado por sesion_id
         $h = $pdo->prepare("
@@ -378,15 +401,27 @@ $servicios = $pdo ? $pdo->query("SELECT id_servicios,nombre_servicio FROM tipo_s
 $formatos = $pdo ? $pdo->query("SELECT id_formato,tipo FROM formato ORDER BY tipo")->fetchAll(PDO::FETCH_ASSOC) : [];
 $formas_pago = $pdo ? $pdo->query("SELECT id_forma,nombre_pago FROM forma_pago")->fetchAll(PDO::FETCH_ASSOC) : [];
 $todas_cond = $pdo ? $pdo->query("SELECT id_condiciones,detalle FROM condiciones ORDER BY id_condiciones")->fetchAll(PDO::FETCH_ASSOC) : [];
+$modelos_cat = $pdo ? $pdo->query("SELECT id_modelo, nivel, categoria, tipo, nombre FROM modelo WHERE activo=1 ORDER BY nivel, categoria, tipo, nombre")->fetchAll(PDO::FETCH_ASSOC) : [];
 
 function calcEstado(array $ct, string $hoy): array
 {
+    $monto = $ct['monto_total'] ?? null;
     $s = (float) ($ct['saldo'] ?? 0);
     $f = $ct['fecha_limite'] ?? '';
-    if ($s <= 0)
+
+    // 🔹 NUEVO: Reserva
+    if ($monto === null) {
+        return ['label' => 'Reserva', 'clase' => 'badge-reserva'];
+    }
+
+    if ($s <= 0) {
         return ['label' => 'Pagado', 'clase' => 'badge-ok'];
-    if ($f && $f < $hoy)
+    }
+
+    if ($f && $f < $hoy) {
         return ['label' => 'No pago', 'clase' => 'badge-pendiente'];
+    }
+
     return ['label' => 'Proceso', 'clase' => 'badge-parcial'];
 }
 
@@ -425,6 +460,7 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                 <button class="mtab" onclick="mt('mpPago',this)">Pago</button>
                 <button class="mtab" onclick="mt('mpEntrega',this)">Entrega</button>
                 <button class="mtab" onclick="mt('mpCond',this)">Condiciones</button>
+                <button class="mtab" onclick="mt('mpModelos',this)">Modelos</button>
             </div>
             <form method="POST" action="" id="form-editar">
                 <input type="hidden" name="action" value="editar" />
@@ -435,40 +471,59 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                     <div class="esec">
                         <div class="esec-t">Cliente Principal</div>
                         <div class="eg2">
-                            <div class="ec es2"><label>Nombre completo *</label><input type="text" name="nombre" id="e-nombre" required /></div>
-                            <div class="ec"><label>DNI *</label><input type="text" name="dni" id="e-dni" maxlength="8" required /></div>
-                            <div class="ec"><label>Teléfono</label><input type="text" name="telefono" id="e-telefono" maxlength="20" /></div>
-                            <div class="ec es2"><label>Email</label><input type="email" name="email" id="e-email" /></div>
-                            <div class="ec es2"><label>Dirección cliente</label><input type="text" name="direccion_cliente" id="e-dir_cliente" /></div>
+                            <div class="ec es2"><label>Nombre completo *</label><input type="text" name="nombre"
+                                    id="e-nombre" autocomplete="off" /></div>
+                            <div class="ec"><label>DNI *</label><input type="text" name="dni" id="e-dni" maxlength="8"
+                                    autocomplete="off" /></div>
+                            <div class="ec"><label>Teléfono</label><input type="text" name="telefono" id="e-telefono"
+                                    maxlength="20" autocomplete="off" /></div>
+                            <div class="ec es2"><label>Email</label><input type="email" name="email" id="e-email"
+                                    autocomplete="off" /></div>
+                            <div class="ec es2"><label>Dirección cliente</label><input type="text"
+                                    name="direccion_cliente" id="e-dir_cliente" autocomplete="off" /></div>
                         </div>
                     </div>
                     <div class="esec">
-                        <div class="esec-t" style="color:#888;">Segundo Cliente <span style="font-size:9px;font-weight:400;">(opcional)</span></div>
+                        <div class="esec-t" style="color:#888;">Segundo Cliente <span
+                                style="font-size:9px;font-weight:400;">(opcional)</span></div>
                         <div class="eg2">
-                            <div class="ec es2"><label>Nombre completo</label><input type="text" name="c2_nombre" id="e-c2_nombre" /></div>
-                            <div class="ec"><label>DNI</label><input type="text" name="c2_dni" id="e-c2_dni" maxlength="8" /></div>
-                            <div class="ec"><label>Teléfono</label><input type="text" name="c2_telefono" id="e-c2_telefono" maxlength="20" /></div>
-                            <div class="ec es2"><label>Email</label><input type="email" name="c2_email" id="e-c2_email" /></div>
-                            <div class="ec es2"><label>Dirección</label><input type="text" name="c2_direccion" id="e-c2_direccion" /></div>
+                            <div class="ec es2"><label>Nombre completo</label><input type="text" name="c2_nombre"
+                                    id="e-c2_nombre" autocomplete="off" /></div>
+                            <div class="ec"><label>DNI</label><input type="text" name="c2_dni" id="e-c2_dni"
+                                    maxlength="8" autocomplete="off" /></div>
+                            <div class="ec"><label>Teléfono</label><input type="text" name="c2_telefono"
+                                    id="e-c2_telefono" maxlength="20" autocomplete="off" /></div>
+                            <div class="ec es2"><label>Email</label><input type="email" name="c2_email" id="e-c2_email"
+                                    autocomplete="off" /></div>
+                            <div class="ec es2"><label>Dirección</label><input type="text" name="c2_direccion"
+                                    id="e-c2_direccion" autocomplete="off" /></div>
                         </div>
                     </div>
                     <div class="esec">
                         <div class="esec-t">Evento</div>
                         <div class="eg2">
-                            <div class="ec"><label>Fecha del evento</label><input type="date" name="fecha_evento" id="e-fecha_evento" /></div>
-                            <div class="ec"><label>Hora de inicio</label><input type="time" name="ho_inicio" id="e-ho_inicio" /></div>
-                            <div class="ec es2"><label>Dirección *</label><input type="text" name="direccion" id="e-direccion" required /></div>
-                            <div class="ec"><label>Provincia *</label><input type="text" name="provincia" id="e-provincia" required /></div>
-                            <div class="ec"><label>Proforma</label><input type="number" name="proforma" id="e-proforma" min="1" /></div>
+                            <div class="ec"><label>Fecha del evento</label><input type="date" name="fecha_evento"
+                                    id="e-fecha_evento" /></div>
+                            <div class="ec"><label>Hora de inicio</label><input type="time" name="ho_inicio"
+                                    id="e-ho_inicio" /></div>
+                            <div class="ec es2"><label>Dirección *</label><input type="text" name="direccion"
+                                    id="e-direccion" autocomplete="off" /></div>
+                            <div class="ec"><label>Provincia *</label><input type="text" name="provincia"
+                                    id="e-provincia" autocomplete="off" /></div>
+                            <div class="ec"><label>Proforma</label><input type="number" name="proforma" id="e-proforma"
+                                    min="1" /></div>
                             <div class="ec es2"><label>Evento *</label>
                                 <select name="servicio_id" id="e-servicio_id" required>
                                     <?php foreach ($servicios as $s): ?>
-                                        <option value="<?= $s['id_servicios'] ?>"><?= htmlspecialchars($s['nombre_servicio']) ?></option>
+                                        <option value="<?= $s['id_servicios'] ?>">
+                                            <?= htmlspecialchars($s['nombre_servicio']) ?>
+                                        </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="ec es2"><label>Servicio (descripción)</label>
-                                <input type="text" name="servicio_detalle" id="e-servicio_detalle" maxlength="100" placeholder="Descripción del servicio contratado..."/>
+                                <input type="text" name="servicio_detalle" id="e-servicio_detalle" maxlength="100"
+                                    placeholder="Descripción del servicio contratado..." />
                             </div>
                         </div>
                     </div>
@@ -480,9 +535,9 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                         <div class="esec-t">Estado de Pago</div>
                         <div class="eg2">
                             <div class="ec"><label>Monto Total (S/) *</label><input type="number" name="monto_total"
-                                    id="e-monto_total" min="0" step="0.01" required oninput="editSaldo()" /></div>
+                                    id="e-monto_total" min="0" step="0.01" oninput="editSaldo()" /></div>
                             <div class="ec"><label>Adelanto (S/) *</label><input type="number" name="adelanto"
-                                    id="e-adelanto" min="0" step="0.01" required oninput="editSaldo()" /></div>
+                                    id="e-adelanto" min="0" step="0.01" oninput="editSaldo()" /></div>
                             <div class="ec"><label>Saldo Pendiente</label><input type="text" id="e-saldo-d"
                                     readonly /><input type="hidden" name="saldo" id="e-saldo-h" /></div>
                             <div class="ec"><label>Fecha límite</label><input type="date" name="fecha_limite"
@@ -506,9 +561,12 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                     <div class="esec">
                         <div class="esec-t">Entrega del Material</div>
                         <div class="eg2">
-                            <div class="ec"><label>Fecha entrega material</label><input type="date" name="fecha_entrega" id="e-fecha_entrega" /></div>
-                            <div class="ec"><label>Fecha entrega formato</label><input type="date" name="fecha_formato" id="e-fecha_formato" /></div>
-                            <div class="ec es2"><label>Material</label><input type="text" name="material" id="e-material" maxlength="200" placeholder="Ej: Álbum, USB, Video..."/></div>
+                            <div class="ec"><label>Fecha entrega material</label><input type="date" name="fecha_entrega"
+                                    id="e-fecha_entrega" /></div>
+                            <div class="ec"><label>Fecha entrega formato</label><input type="date" name="fecha_formato"
+                                    id="e-fecha_formato" /></div>
+                            <div class="ec es2"><label>Material</label><input type="text" name="material"
+                                    id="e-material" maxlength="200" placeholder="Ej: Álbum, USB, Video..." /></div>
                             <div class="ec"><label>Formato</label>
                                 <select name="formato_id" id="e-formato_id">
                                     <option value="">— Confirmar —</option>
@@ -517,7 +575,8 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="ec"><label>N° unidades</label><input type="number" name="unidades" id="e-unidades" min="1" placeholder="Confirmar" /></div>
+                            <div class="ec"><label>N° unidades</label><input type="number" name="unidades"
+                                    id="e-unidades" min="1" placeholder="Confirmar" /></div>
                         </div>
                     </div>
                 </div>
@@ -535,6 +594,15 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                                 </label>
                             <?php endforeach; ?>
                         </div>
+                    </div>
+                </div>
+                <!-- TAB MODELOS -->
+                <div class="mpanel" id="mpModelos">
+                    <div class="esec">
+                        <div class="esec-t">Modelos del Contrato</div>
+                        <div id="e-modelos-lista"></div>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="agregarModelo()">+ Agregar modelo</button>
+                        <div id="e-modelos-total" style="font-size:12px;margin-top:10px;"></div>
                     </div>
                 </div>
 
@@ -584,7 +652,6 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
             </div>
         </div>
     </div>
-
 
     <!-- ══ PÁGINA ══ -->
     <div class="pagina">
@@ -670,8 +737,7 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                             <?php foreach ($contratos as $ct):
                                 $estado = calcEstado($ct, $hoy);
                                 $condIds = array_column($ct['condiciones_obj'], 'id_condiciones');
-                                $nHist = count($ct['historial_sesiones']);
-                                ?>
+                                $nHist = count($ct['historial_sesiones']); ?>
                                 <tr>
                                     <td class="td-num"><?= str_pad($ct['id_contrato'], 3, '0', STR_PAD_LEFT) ?></td>
                                     <td>
@@ -683,16 +749,15 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                                         <?php
                                         $fe2 = $ct['fecha_evento'] ?? '';
                                         $ts2 = $fe2 ? @strtotime($fe2) : false;
-                                        echo ($ts2 && $ts2 > 0 && date('Y',$ts2) > 1900)
+                                        echo ($ts2 && $ts2 > 0 && date('Y', $ts2) > 1900)
                                             ? date('d/m/Y', $ts2)
-                                            : '<em style="color:#aaa;font-size:11px;font-style:italic">Por confirmar</em>';
-                                        ?>
+                                            : '<em style="color:#aaa;font-size:11px;font-style:italic">Por confirmar</em>'; ?>
                                         <div class="sub-dato"><?php
-                                            $hi2 = $ct['ho_inicio'] ?? '';
-                                            if ($hi2 && $hi2 !== '00:00:00') {
-                                                $tsH = @strtotime('1970-01-01 '.$hi2);
-                                                echo $tsH ? date('g:i A', $tsH) : '';
-                                            }
+                                        $hi2 = $ct['ho_inicio'] ?? '';
+                                        if ($hi2 && $hi2 !== '00:00:00') {
+                                            $tsH = @strtotime('1970-01-01 ' . $hi2);
+                                            echo $tsH ? date('g:i A', $tsH) : '';
+                                        }
                                         ?></div>
                                     </td>
                                     <td class="td-monto">S/ <?= number_format($ct['monto_total'], 2) ?></td>
@@ -763,312 +828,64 @@ $CONDICION_FIJA = '* Después de ser entregado el material, el cliente tiene 1 s
                     </table>
                 </div>
             <?php endif; ?>
-
             <div class="acciones">
                 <a href="../index.php" class="btn btn-secondary">← Volver al inicio</a>
             </div>
-
         </div>
-
     </div>
 
     <script>
         const HOY = '<?= $hoy ?>';
         const COND_FIJA = <?= json_encode($CONDICION_FIJA) ?>;
+    </script>
+    <script src="../js/edicion.js"></script>
+    <script>
+        const MODELOS = <?= json_encode($modelos_cat) ?>;
 
-        function abrir(id) { document.getElementById(id).classList.add('visible'); }
-        function cerrar(id) { document.getElementById(id).classList.remove('visible'); }
-        function formatearHora(hora) {
-            if (!hora) return '—';
+        function agregarModelo(id, cant) {
+            const fila = document.createElement('div');
+            fila.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center;';
 
-            let partes = hora.split(':');
-            let h = parseInt(partes[0]);
-            let m = partes[1];
-
-            let ampm = h >= 12 ? 'PM' : 'AM';
-            h = h % 12;
-            h = h ? h : 12;
-
-            return h + ':' + m + ' ' + ampm;
-        }
-
-        document.querySelectorAll('.modal-g-overlay,.doc-view-overlay').forEach(o => {
-            o.addEventListener('click', e => { if (e.target === o) { cerrar(o.id); if (o.id === 'modal-ver') document.getElementById('ver-hoja').innerHTML = ''; } });
-        });
-
-        // Tabs modal edición
-        function mt(panelId, btn) {
-            document.querySelectorAll('.mpanel').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.mtab').forEach(b => b.classList.remove('active'));
-            document.getElementById(panelId).classList.add('active');
-            btn.classList.add('active');
-        }
-
-        // Saldo edición
-        function editSaldo() {
-            const t = parseFloat(document.getElementById('e-monto_total').value) || 0;
-            const a = parseFloat(document.getElementById('e-adelanto').value) || 0;
-            const s = t - a;
-            const d = document.getElementById('e-saldo-d');
-            const h = document.getElementById('e-saldo-h');
-            d.value = s.toFixed(2); h.value = s.toFixed(2);
-            d.style.color = s < 0 ? '#c00' : '#1a7a30';
-            document.getElementById('e-saldo-err').style.display = s < 0 ? 'block' : 'none';
-        }
-
-        // Abrir edición
-        function abrirEditar(c, condActuales) {
-            function fechaOk(v) { return v && !v.startsWith('0000') && !v.startsWith('-') && parseInt(v.split('-')[0]) >= 1900; }
-            document.getElementById('e-id').value           = c.id_contrato;
-            document.getElementById('e-nombre').value       = c.cliente    || '';
-            document.getElementById('e-dni').value          = c.dni        || '';
-            document.getElementById('e-email').value        = c.email      || '';
-            document.getElementById('e-telefono').value     = c.telefono   || '';
-            document.getElementById('e-dir_cliente').value  = c.dir_cliente || '';
-            document.getElementById('e-c2_nombre').value    = c.cliente2_nombre    || '';
-            document.getElementById('e-c2_dni').value       = c.cliente2_dni       || '';
-            document.getElementById('e-c2_telefono').value  = c.cliente2_telefono  || '';
-            document.getElementById('e-c2_email').value     = c.cliente2_email     || '';
-            document.getElementById('e-c2_direccion').value = c.cliente2_direccion || '';
-            document.getElementById('e-proforma').value     = c.proforma   || '';
-            document.getElementById('e-provincia').value    = c.provincia  || '';
-            document.getElementById('e-direccion').value    = c.direccion  || '';
-            const horaVal = c.ho_inicio || '';
-            document.getElementById('e-ho_inicio').value    = (horaVal && horaVal !== '00:00:00') ? horaVal.substring(0,5) : '';
-            document.getElementById('e-fecha_evento').value  = fechaOk(c.fecha_evento)  ? c.fecha_evento  : '';
-            document.getElementById('e-monto_total').value   = parseFloat(c.monto_total || 0).toFixed(2);
-            document.getElementById('e-adelanto').value      = parseFloat(c.adelanto    || 0).toFixed(2);
-            document.getElementById('e-fecha_limite').value  = fechaOk(c.fecha_limite)  ? c.fecha_limite  : '';
-            document.getElementById('e-fecha_entrega').value = fechaOk(c.fecha_entrega) ? c.fecha_entrega : '';
-            document.getElementById('e-fecha_formato').value = fechaOk(c.fecha_formato) ? c.fecha_formato : '';
-            document.getElementById('e-unidades').value     = c.unidades || '';
-            document.getElementById('e-material').value     = c.material  || '';
-            selVal('e-servicio_id', c.servicio_id);
-            selVal('e-forma_id',    c.forma_id);
-            selVal('e-formato_id',  c.formato_id);
-            const sdEl = document.getElementById('e-servicio_detalle');
-            if (sdEl) sdEl.value = c.servicio_detalle || '';
-            editSaldo();
-
-            document.querySelectorAll('#e-cond-lista input[type="checkbox"]').forEach(cb => {
-                const m = condActuales.includes(parseInt(cb.value));
-                cb.checked = m;
-                cb.closest('.econd-item').classList.toggle('sel', m);
+            const sel = document.createElement('select');
+            sel.name = 'modelo_id[]';
+            sel.style.flex = '1';
+            sel.add(new Option('— Elegir modelo —', ''));
+            MODELOS.forEach(m => {
+                const etiqueta = (m.tipo ? m.tipo + ' · ' : '') + m.nombre + ' (' + (m.nivel.startsWith('Inicial') ? 'Inicial' : 'Prim/Sec') + ')';
+                sel.add(new Option(etiqueta, m.id_modelo));
             });
+            sel.value = id || '';
 
-            document.getElementById('tit-editar').textContent =
-                'Editar Contrato N° ' + String(c.id_contrato).padStart(3, '0');
+            const num = document.createElement('input');
+            num.type = 'number'; num.name = 'modelo_cant[]'; num.min = '1';
+            num.placeholder = 'Cant.'; num.style.width = '90px'; num.value = cant || '';
+            num.addEventListener('input', totalModelos);
 
-            mt('mpDatos', document.querySelector('.mtab'));
-            abrir('modal-editar');
+            const btn = document.createElement('button');
+            btn.type = 'button'; btn.className = 'btn btn-secondary btn-sm'; btn.textContent = '×';
+            btn.onclick = () => { fila.remove(); totalModelos(); };
+
+            fila.append(sel, num, btn);
+            document.getElementById('e-modelos-lista').appendChild(fila);
         }
 
-        function selVal(id, val) {
-            const s = document.getElementById(id);
-            if (!s || val == null) return;
-            [...s.options].forEach(o => { o.selected = (o.value == val); });
+        function totalModelos() {
+            const suma = [...document.querySelectorAll('#e-modelos-lista input[name="modelo_cant[]"]')]
+                .reduce((s, i) => s + (parseInt(i.value) || 0), 0);
+            const un = parseInt(document.getElementById('e-unidades').value) || 0;
+            const el = document.getElementById('e-modelos-total');
+            el.textContent = 'Suma de modelos: ' + suma + ' · Unidades del contrato: ' + (un || 'sin definir');
+            el.style.color = (un && suma !== un) ? '#c00' : '#555';
         }
 
-        function validarEd() {
-            const s = parseFloat(document.getElementById('e-saldo-h').value);
-            if (isNaN(s) || s < 0) {
-                alert('⚠ El adelanto no puede superar el monto total.');
-                mt('mpPago', document.querySelectorAll('.mtab')[1]);
-                return false;
-            }
-            return true;
-        }
-
-        // Utilidades
-        function fmtFecha(f) {
-            if (!f || f === '' || f.startsWith('0000') || f.startsWith('-')) return '<em style="color:#aaa;font-style:italic">Por confirmar</em>';
-            const p = f.split('-');
-            if (!p[0] || parseInt(p[0]) < 1900) return '<em style="color:#aaa;font-style:italic">Por confirmar</em>';
-            return p[2] + '/' + p[1] + '/' + p[0];
-        }
-        function fmtHora(h) {
-            if (!h || h === '' || h === '00:00:00') return '<em style="color:#aaa;font-style:italic">Por confirmar</em>';
-            const parts = h.split(':');
-            let hh = parseInt(parts[0]);
-            const mm = parts[1] || '00';
-            const ampm = hh >= 12 ? 'PM' : 'AM';
-            hh = hh % 12 || 12;
-            return hh + ':' + mm + ' ' + ampm;
-        }
-        function fmtMoney(v) {
-            return 'S/ ' + parseFloat(v || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        }
-        function esc(s) {
-            if (!s) return '';
-            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
-        function calcEstado(saldo, fl) {
-            if (saldo <= 0) return { label: 'Pagado', bg: '#e6f4ea', color: '#1a7a30' };
-            if (fl && fl < HOY) return { label: 'No pago', bg: '#fdecea', color: '#c0392b' };
-            return { label: 'Proceso', bg: '#fff3e0', color: '#e65100' };
-        }
-
-        // Ver contrato
-        function verContrato(c) {
-            const saldo  = parseFloat(c.saldo || 0);
-            const estado = calcEstado(saldo, c.fecha_limite);
-            const num    = String(c.id_contrato).padStart(3, '0');
-            const conds  = Array.isArray(c.condiciones_obj) ? c.condiciones_obj : [];
-            const liConds = conds.map(co => `<li>${esc(co.detalle)}</li>`).join('');
-
-            document.getElementById('btn-pdf-link').href = 'contrato_pdf.php?id=' + c.id_contrato + '&origen=edicion';
-            document.getElementById('ver-hoja').innerHTML = `
-        <div class="doc-header">
-            <div class="doc-header-logo"><img src="../img/logo.png" alt="ISHUME"/></div>
-            <div class="doc-header-info">
-                <h1>Xiomara Tasayco H.</h1>
-                <p>Gerenta General &nbsp;|&nbsp; 991157028 &nbsp;|&nbsp; ✉ IshumeAgencia@hotmail.com</p>
-            </div>
-        </div>
-        <div class="cv-body">
-            <div class="cv-title">
-                <h2>Contrato N° ${num} — Servicios Audiovisuales</h2>
-                <span>Chincha, ${fmtFecha(c.fecha_contrato)}</span>
-            </div>
-            <div class="cv-sec"><div class="cv-sec-t">Datos del Cliente</div>
-                <table class="cv-tbl">
-                    <tr><td class="l">Nombre</td><td>${esc(c.cliente)}</td></tr>
-                    <tr><td class="l">DNI</td><td>${esc(c.dni)}</td></tr>
-                    <tr><td class="l">Teléfono</td><td>${esc(c.telefono) || '—'}</td></tr>
-                    <tr><td class="l">Email</td><td>${esc(c.email) || '—'}</td></tr>
-                    ${c.dir_cliente ? `<tr><td class="l">Dirección</td><td>${esc(c.dir_cliente)}</td></tr>` : ''}
-                </table>
-                ${c.cliente2_nombre ? `
-                <div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#f07c00;margin:8px 0 4px">Cliente 2</div>
-                <table class="cv-tbl">
-                    <tr><td class="l">Nombre</td><td>${esc(c.cliente2_nombre)}</td></tr>
-                    ${c.cliente2_dni       ? `<tr><td class="l">DNI</td><td>${esc(c.cliente2_dni)}</td></tr>` : ''}
-                    ${c.cliente2_telefono  ? `<tr><td class="l">Teléfono</td><td>${esc(c.cliente2_telefono)}</td></tr>` : ''}
-                    ${c.cliente2_email     ? `<tr><td class="l">Email</td><td>${esc(c.cliente2_email)}</td></tr>` : ''}
-                    ${c.cliente2_direccion ? `<tr><td class="l">Dirección</td><td>${esc(c.cliente2_direccion)}</td></tr>` : ''}
-                </table>` : ''}
-            </div>
-            <div class="cv-sec"><div class="cv-sec-t">Detalles del contrato</div>
-                <table class="cv-tbl">
-                    <tr><td class="l">Evento</td><td>${esc(c.nombre_servicio)}</td></tr>
-                    ${c.servicio_detalle ? `<tr><td class="l">Servicio</td><td>${esc(c.servicio_detalle)}</td></tr>` : ''}
-                    <tr><td class="l">Fecha</td><td>${fmtFecha(c.fecha_evento)}</td></tr>
-                    <tr><td class="l">Hora inicio</td><td>${fmtHora(c.ho_inicio)}</td></tr>
-                    <tr><td class="l">Dirección</td><td>${esc(c.direccion)}</td></tr>
-                    <tr><td class="l">Provincia</td><td>${esc(c.provincia)}</td></tr>
-                    <tr><td class="l">N° personas</td><td>${esc(c.proforma)}</td></tr>
-                </table>
-            </div>
-            <div class="cv-sec"><div class="cv-sec-t">Estado de Pago</div>
-                <table class="cv-tbl-pago">
-                    <thead><tr><th>Monto Total</th><th>Adelanto</th><th>Saldo</th><th>Forma Pago</th><th>Fecha Límite</th><th>Estado</th></tr></thead>
-                    <tbody><tr>
-                        <td style="font-weight:700">${fmtMoney(c.monto_total)}</td>
-                        <td style="font-weight:700">${fmtMoney(c.adelanto)}</td>
-                        <td style="font-weight:800;color:${saldo<=0?'#1a7a30':'#c0392b'}">${fmtMoney(c.saldo)}</td>
-                        <td>${esc(c.nombre_pago) || '—'}</td>
-                        <td>${fmtFecha(c.fecha_limite)}</td>
-                        <td><span class="cv-estado" style="background:${estado.bg};color:${estado.color}">${estado.label}</span></td>
-                    </tr></tbody>
-                </table>
-            </div>
-            <div class="cv-sec"><div class="cv-sec-t">Entrega del Material</div>
-                <table class="cv-tbl">
-                    <tr><td class="l">Fecha entrega material</td><td>${fmtFecha(c.fecha_entrega)}</td></tr>
-                    <tr><td class="l">Fecha entrega formato</td><td>${fmtFecha(c.fecha_formato)}</td></tr>
-                    ${c.material ? `<tr><td class="l">Material</td><td>${esc(c.material)}</td></tr>` : ''}
-                    <tr><td class="l">Formato</td><td>${esc(c.formato) || '<em style="color:#aaa">Confirmar</em>'}</td></tr>
-                    <tr><td class="l">Unidades</td><td>${c.unidades || '<em style="color:#aaa">Confirmar</em>'}</td></tr>
-                </table>
-            </div>
-            <div class="cv-sec"><div class="cv-sec-t">Condiciones del Contrato</div>
-                <div class="cv-conds">
-                    ${liConds ? '<ol>'+liConds+'</ol>' : ''}
-                    <div class="cv-cond-fija">${esc(COND_FIJA)}</div>
-                </div>
-            </div>
-            <div class="cv-firmas">
-                <div class="cv-firma"><div class="cv-linea"></div><span class="cv-flabel">Firma del Cliente</span></div>
-                <div class="cv-firma"><div class="cv-linea"></div><span class="cv-flabel">Firma de la empresa — ISHUME</span></div>
-            </div>
-        </div>
-    `;
-            abrir('modal-ver');
-            document.getElementById('modal-ver').scrollTop = 0;
-        }
-
-        // Ver historial agrupado por sesión
-        function verHistorial(id, sesiones, cliente) {
-            document.getElementById('tit-hist').textContent =
-                'Historial — Contrato N° ' + String(id).padStart(3, '0') + ' · ' + cliente;
-
-            let html = '';
-
-            if (!sesiones || sesiones.length === 0) {
-                html = '<div class="hist-vacio">Sin cambios registrados en este contrato.</div>';
-            } else {
-                sesiones.forEach((ses, idx) => {
-                    const fechaHora = fmtFechaHora(ses.fecha_hora);
-                    const nCambios = ses.cambios.length;
-                    html += `
-                <div class="hist-sesion">
-                    <div class="hist-sesion-header">
-                        <span class="hist-sesion-fecha">
-                            📝 Edición ${sesiones.length - idx} — ${fechaHora}
-                            <span style="font-size:10px;color:#aaa;font-weight:400;margin-left:8px;">
-                                ${nCambios} campo${nCambios !== 1 ? 's' : ''} modificado${nCambios !== 1 ? 's' : ''}
-                            </span>
-                        </span>
-                    </div>
-                    <div class="hist-sesion-body">`;
-
-                    ses.cambios.forEach(cambio => {
-                        html += `
-                        <div class="hist-fila">
-                            <div class="hf-campo">${esc(cambio.campo)}</div>
-                            <div class="hf-ant">${esc(cambio.anterior) || '—'}</div>
-                            <div class="hf-nvo">${esc(cambio.nuevo) || '—'}</div>
-                        </div>`;
-                    });
-
-                    html += `    </div>
-                </div>`;
-                });
-            }
-
-            document.getElementById('hist-body').innerHTML = html;
-            abrir('modal-hist');
-        }
-
-        function fmtFechaHora(dt) {
-            if (!dt) return '—';
-            const [fecha, hora] = dt.split(' ');
-            const p = (fecha||'').split('-');
-            const fechaStr = (p[2]&&p[1]&&p[0]) ? p[2]+'/'+p[1]+'/'+p[0] : '—';
-            const parts = (hora||'').split(':');
-            let hh = parseInt(parts[0]||0);
-            const mm = parts[1] || '00';
-            const ampm = hh >= 12 ? 'PM' : 'AM';
-            hh = hh % 12 || 12;
-            return fechaStr + ' a las ' + hh + ':' + mm + ' ' + ampm;
-        }
-
-        let deleteId = null;
-
-        function confirmarEliminar(id, nombre) {
-            deleteId = id;
-
-            document.getElementById('confirm-text').innerHTML =
-                `¿Eliminar contrato N° <b>${id}</b> de "<b>${nombre}</b>"?<br><br>
-        <span style="color:#c0392b;">⚠ Esta acción no se puede deshacer.</span>`;
-
-            abrir('modal-confirm');
-        }
-
-        function ejecutarDelete() {
-            document.getElementById('del-id').value = deleteId;
-            document.getElementById('form-delete').submit();
-        }
+        const _abrirEditarOrig = abrirEditar;
+        abrirEditar = function (ct, condIds) {
+            _abrirEditarOrig(ct, condIds);
+            document.getElementById('e-modelos-lista').innerHTML = '';
+            (ct.modelos || []).forEach(m => agregarModelo(m.id_modelo, m.cantidad));
+            totalModelos();
+        };
+        document.getElementById('e-unidades').addEventListener('input', totalModelos);
     </script>
 
 </body>

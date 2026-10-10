@@ -1,27 +1,10 @@
 <?php
 
 //  registrar.php — Nuevo Contrato
-
-$host    = '127.0.0.1';
-$port    = '3307';
-$db      = 'administracion';
-$user    = 'root';
-$pass    = '';
-$charset = 'utf8mb4';
-
-$dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
-$pdo = null;
-$error_msg   = '';
-$success_msg = '';
+require_once '../conexion/conexion.php';
 
 if (isset($_GET['ok'])) {
     $success_msg = 'Contrato N° ' . (int)$_GET['ok'] . ' registrado exitosamente.';
-}
-
-try {
-    $pdo = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-} catch (PDOException $e) {
-    $error_msg = 'Error de conexión: ' . $e->getMessage();
 }
 
 // Crear tabla snapshot si no existe
@@ -62,12 +45,14 @@ $servicios   = [];
 $formatos    = [];
 $formas_pago = [];
 $condiciones = [];
+$modelos_cat = [];
 
 if ($pdo) {
     $servicios   = $pdo->query("SELECT id_servicios, nombre_servicio FROM tipo_servicio ORDER BY nombre_servicio")->fetchAll(PDO::FETCH_ASSOC);
     $formatos    = $pdo->query("SELECT id_formato, tipo FROM formato ORDER BY tipo")->fetchAll(PDO::FETCH_ASSOC);
     $formas_pago = $pdo->query("SELECT id_forma, nombre_pago FROM forma_pago")->fetchAll(PDO::FETCH_ASSOC);
     $condiciones = $pdo->query("SELECT id_condiciones, detalle FROM condiciones ORDER BY id_condiciones")->fetchAll(PDO::FETCH_ASSOC);
+    $modelos_cat = $pdo->query("SELECT id_modelo, nivel, categoria, tipo, nombre FROM modelo WHERE activo=1 ORDER BY nivel, categoria, tipo, nombre")->fetchAll(PDO::FETCH_ASSOC);
 }
 
 $hoy = date('Y-m-d');
@@ -90,9 +75,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $pdo) {
     $fecha_evento  = trim($_POST['fecha_evento']  ?? '');
     $fecha_limite  = trim($_POST['fecha_limite']  ?? '');
     $fecha_entrega = trim($_POST['fecha_entrega'] ?? '');
-    $monto_total   = (float)($_POST['monto_total'] ?? 0);
-    $adelanto      = (float)($_POST['adelanto']    ?? 0);
-    $saldo         = round($monto_total - $adelanto, 2);
+    $monto_total_input = trim($_POST['monto_total'] ?? '');
+    $monto_total = ($monto_total_input === '') ? null : (float)$monto_total_input;
+
+    $adelanto = (float)($_POST['adelanto'] ?? 0);
+
+    // Si no hay monto total → saldo queda NULL
+    if ($monto_total === null) {
+        $saldo = null;
+    } else {
+        $saldo = round($monto_total - $adelanto, 2);
+    }
     $condiciones_sel = array_map('intval', $_POST['condiciones_sel'] ?? []);
     $material      = trim($_POST['material'] ?? '');
     $fecha_formato = trim($_POST['fecha_formato'] ?? '');
@@ -103,7 +96,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $pdo) {
     if ($fecha_entrega !== '' && $fecha_entrega < $hoy) {
         $errores[] = "La fecha de entrega no puede ser anterior a hoy.";
     }
-    if ($adelanto > $monto_total) $errores[] = "El adelanto no puede superar el monto total.";
+    if ($monto_total !== null && $adelanto > $monto_total) {
+        $errores[] = "El adelanto no puede superar el monto total.";
+    }
     if (strlen($telefono) < 7)    $errores[] = "El celular es obligatorio (mínimo 7 dígitos).";
     $servicio_detalle = trim($_POST['servicio_detalle'] ?? '');
 
@@ -182,6 +177,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $pdo) {
             // ──────────────────────────────────────────────
             // 6. SNAPSHOT — foto inmutable del contrato firmado
             // ──────────────────────────────────────────────
+            // 5.1 Modelos del contrato
+            $mod_ids  = $_POST['modelo_id']   ?? [];
+            $mod_cant = $_POST['modelo_cant'] ?? [];
+            $modelos_nuevos = [];
+            foreach ($mod_ids as $i => $mid) {
+                $mid  = (int)$mid;
+                $cant = (int)($mod_cant[$i] ?? 0);
+                if ($mid > 0 && $cant > 0) {
+                    $modelos_nuevos[$mid] = ($modelos_nuevos[$mid] ?? 0) + $cant;
+                }
+            }
+            $stmtMod = $pdo->prepare("INSERT INTO contrato_modelo (id_contrato,id_modelo,cantidad) VALUES (?,?,?)");
+            foreach ($modelos_nuevos as $mid => $cant) {
+                $stmtMod->execute([$id_contrato, $mid, $cant]);
+            }
 
             // Obtener nombres legibles para los IDs
             $nomServicio = $pdo->query("SELECT nombre_servicio FROM tipo_servicio WHERE id_servicios=" . (int)$_POST['servicio_id'])->fetchColumn();
@@ -244,8 +254,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $pdo) {
             ]);
 
             $pdo->commit();
-           header("Location: registrar.php?ok=" . $id_contrato);
-           exit;
+            header("Location: registrar.php?ok=" . $id_contrato);
+            exit;
         } catch (PDOException $e) {
             $pdo->rollBack();
             $error_msg = 'Error al guardar: ' . $e->getMessage();
@@ -439,7 +449,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $pdo) {
                             <tr>
                                 <td>
                                     <input type="number" name="monto_total" id="monto_total"
-                                        min="0" step="0.01" placeholder="0.00" required
+                                        min="0" step="0.01" placeholder="opcional"
                                         value="<?= htmlspecialchars($_POST['monto_total'] ?? '') ?>"
                                         oninput="calcularSaldo()" />
                                 </td>
@@ -576,18 +586,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $pdo) {
                         ⚠ Debes seleccionar al menos una condición.
                     </div>
                 </div>
-
-                <!-- FIRMAS -->
-                <div class="firmas">
-                    <div class="firma-box">
-                        <div class="firma-linea"></div>
-                        <span class="firma-label">Firma del Cliente</span>
-                    </div>
-                    <div class="firma-box">
-                        <div class="firma-linea"></div>
-                        <span class="firma-label">Firma del Servidor — ISHUME</span>
-                    </div>
+                <!-- MODELOS DEL CONTRATO -->
+                <div class="seccion">
+                    <div class="seccion-titulo">Modelos del Contrato</div>
+                    <div id="modelos-lista"></div>
+                    <button type="button" class="btn btn-secondary" onclick="agregarModelo()">+ Agregar modelo</button>
+                    <div id="modelos-total" style="font-size:12px;margin-top:10px;"></div>
                 </div>
+                <!-- FIRMAS -->
+                <?php $hayCliente2 = !empty($_POST['c2_nombre']); ?>
+
+                <?php if ($hayCliente2): ?>
+
+                    <!-- 2 clientes -->
+                    <div class="firmas-clientes">
+                        <div class="firma">
+                            <div class="firma-linea"></div>
+                            <div class="firma-label">Firma del Cliente 1</div>
+                        </div>
+
+                        <div class="firma">
+                            <div class="firma-linea"></div>
+                            <div class="firma-label">Firma del Cliente 2</div>
+                        </div>
+                    </div>
+
+                    <div class="firma-centro">
+                        <div class="firma">
+                            <div class="firma-linea"></div>
+                            <div class="firma-label">Firma de la empresa — ISHUME</div>
+                        </div>
+                    </div>
+
+                <?php else: ?>
+
+                    <!-- 1 cliente -->
+                    <div class="firmas-normal">
+                        <div class="firma">
+                            <div class="firma-linea"></div>
+                            <div class="firma-label">Firma del Cliente</div>
+                        </div>
+
+                        <div class="firma">
+                            <div class="firma-linea"></div>
+                            <div class="firma-label">Firma de la empresa — ISHUME</div>
+                        </div>
+                    </div>
+
+                <?php endif; ?>
 
                 <div class="acciones">
                     <a href="../index.php" class="btn btn-secondary">← Volver</a>
@@ -598,94 +644,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $pdo) {
         </div>
 
     </div>
-
+    <script src="../js/registrar.js"></script>
     <script>
-        function calcularSaldo() {
-            const total = parseFloat(document.getElementById('monto_total').value) || 0;
-            const adelanto = parseFloat(document.getElementById('adelanto').value) || 0;
-            const saldo = total - adelanto;
-            const display = document.getElementById('saldo_display');
-            const hidden = document.getElementById('saldo_hidden');
-            const error = document.getElementById('saldo_error');
-            const msg = document.getElementById('msg-ok');
+        const MODELOS = <?= json_encode($modelos_cat) ?>;
+        // Si el formulario falló y se recargó, recupera lo que ya habían escrito
+        const MODELOS_PREVIOS = <?= json_encode(array_map(null, $_POST['modelo_id'] ?? [], $_POST['modelo_cant'] ?? [])) ?>;
 
-            if (msg) {
-                setTimeout(() => {
-                    msg.style.transition = 'opacity 0.5s ease';
-                    msg.style.opacity = '0';
+        function agregarModelo(id, cant) {
+            const fila = document.createElement('div');
+            fila.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center;';
 
-                    setTimeout(() => {
-                        msg.style.display = 'none';
-                    }, 500);
-
-                }, 15000); // 1.5 segundos
-            }
-
-            display.value = saldo.toFixed(2);
-            hidden.value = saldo.toFixed(2);
-            if (saldo < 0) {
-                display.style.color = '#c00';
-                display.style.fontWeight = '700';
-                error.style.display = 'block';
-            } else {
-                display.style.color = '#1a7a30';
-                display.style.fontWeight = '700';
-                error.style.display = 'none';
-            }
-            document.getElementById('adelanto').max = total;
-        }
-
-        function actualizarItem(checkbox) {
-            checkbox.checked ?
-                checkbox.closest('.condicion-item').classList.add('seleccionada') :
-                checkbox.closest('.condicion-item').classList.remove('seleccionada');
-            actualizarContador();
-        }
-
-        function actualizarContador() {
-            const checkboxes = document.querySelectorAll('.condicion-item:not(.condicion-fija) input[type="checkbox"]');
-            const marcadas = [...checkboxes].filter(cb => cb.checked).length;
-            const c = document.getElementById('cond-count');
-            if (c) c.textContent = marcadas;
-            return marcadas;
-        }
-
-        function seleccionarTodas(marcar) {
-            document.querySelectorAll('.condicion-item:not(.condicion-fija) input[type="checkbox"]').forEach(cb => {
-                cb.checked = marcar;
-                marcar
-                    ?
-                    cb.closest('.condicion-item').classList.add('seleccionada') :
-                    cb.closest('.condicion-item').classList.remove('seleccionada');
+            const sel = document.createElement('select');
+            sel.name = 'modelo_id[]';
+            sel.style.flex = '1';
+            sel.add(new Option('— Elegir modelo —', ''));
+            MODELOS.forEach(m => {
+                const etiqueta = (m.tipo ? m.tipo + ' · ' : '') + m.nombre + ' (' + (m.nivel.startsWith('Inicial') ? 'Inicial' : 'Prim/Sec') + ')';
+                sel.add(new Option(etiqueta, m.id_modelo));
             });
-            actualizarContador();
+            sel.value = id || '';
+
+            const num = document.createElement('input');
+            num.type = 'number'; num.name = 'modelo_cant[]'; num.min = '1';
+            num.placeholder = 'Cant.'; num.style.width = '90px'; num.value = cant || '';
+            num.addEventListener('input', totalModelos);
+
+            const btn = document.createElement('button');
+            btn.type = 'button'; btn.className = 'btn btn-secondary'; btn.textContent = '×';
+            btn.onclick = () => { fila.remove(); totalModelos(); };
+
+            fila.append(sel, num, btn);
+            document.getElementById('modelos-lista').appendChild(fila);
         }
 
-        document.getElementById('form-contrato').addEventListener('submit', function(e) {
-            const saldo = parseFloat(document.getElementById('saldo_hidden').value);
-            if (isNaN(saldo) || saldo < 0) {
-                e.preventDefault();
-                alert('⚠ El adelanto no puede ser mayor al monto total.');
-                document.getElementById('adelanto').focus();
-                return;
-            }
-            const hayCheckboxes = document.querySelectorAll('.condicion-item:not(.condicion-fija)').length;
-            if (hayCheckboxes > 0 && actualizarContador() === 0) {
-                e.preventDefault();
-                const aviso = document.getElementById('aviso-cond');
-                if (aviso) aviso.style.display = 'block';
-                document.getElementById('lista-condiciones').scrollIntoView({
-                    behavior: 'smooth'
-                });
-            }
-        });
+        function totalModelos() {
+            const suma = [...document.querySelectorAll('#modelos-lista input[name="modelo_cant[]"]')]
+                .reduce((s, i) => s + (parseInt(i.value) || 0), 0);
+            const un = parseInt(document.querySelector('input[name="unidades"]').value) || 0;
+            const el = document.getElementById('modelos-total');
+            el.textContent = 'Suma de modelos: ' + suma + ' · Unidades del contrato: ' + (un || 'sin definir');
+            el.style.color = (un && suma !== un) ? '#c00' : '#555';
+        }
 
-        window.addEventListener('load', function() {
-            calcularSaldo();
-            actualizarContador();
-        });
+        MODELOS_PREVIOS.forEach(p => agregarModelo(p[0], p[1]));
+        agregarModelo();   // deja una fila lista para llenar
+        totalModelos();
+        document.querySelector('input[name="unidades"]').addEventListener('input', totalModelos);
     </script>
-
 </body>
 
 </html>

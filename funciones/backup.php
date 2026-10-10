@@ -3,14 +3,8 @@
 date_default_timezone_set('America/Lima');
 
 // Respaldo de Base de Datos
-// Respaldo de Base de Datos
 
-$host    = '127.0.0.1';
-$port    = '3307';
-$db      = 'administracion';
-$user    = 'root';
-$pass    = '';
-$charset = 'utf8mb4';
+require_once '../conexion/conexion.php';
 
 // Archivo que registra la fecha del último backup
 $archivoFecha = __DIR__ . '/ultimo_backup.txt';
